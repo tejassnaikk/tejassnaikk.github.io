@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tejas Naik — Data &amp; ML Engineer</title>
+<meta name="description" content="Tejas Naik builds end-to-end, fully deployed data and ML systems — streaming pipelines, observability, and forecasting. MS Data Science @ CU Boulder. Open to data/ML engineering roles in Denver." />
+<meta property="og:title" content="Tejas Naik — Data &amp; ML Engineer" />
+<meta property="og:description" content="End-to-end, deployed data &amp; ML systems: streaming pipelines, observability, forecasting." />
+<meta property="og:type" content="website" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #ECEFF3;
+    --surface: #FFFFFF;
+    --surface-2: #F6F8FA;
+    --ink: #111A22;
+    --muted: #5A6671;
+    --faint: #8A95A0;
+    --line: #D6DCE3;
+    --line-soft: #E4E9EE;
+    --accent: #1F4DF0;
+    --accent-ink: #0F2FB0;
+    --accent-soft: rgba(31, 77, 240, 0.08);
+    --live: #18A058;
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --maxw: 1080px;
+    --r: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+
+  body {
+    margin: 0;
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    /* faint engineering-grid texture */
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px;
+    background-position: -1px -1px;
+  }
+
+  a { color: inherit; text-decoration: none; }
+
+  .wrap {
+    width: 100%;
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- eyebrow / mono utility ---------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 22px;
+    height: 1px;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  /* ---------- nav ---------- */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(236, 239, 243, 0.82);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 62px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: 17px;
+  }
+  .brand .mark {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: var(--ink);
+    display: grid; place-items: center;
+    flex: none;
+  }
+  .brand .mark svg { display: block; }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  .nav-links a {
+    padding: 7px 12px;
+    border-radius: 8px;
+    color: var(--muted);
+    transition: color .15s, background .15s;
+  }
+  .nav-links a:hover { color: var(--ink); background: var(--accent-soft); }
+  .nav-links a.active { color: var(--accent); }
+  .nav-cta {
+    margin-left: 6px;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background .15s, color .15s;
+  }
+  .nav-cta:hover { background: var(--ink); color: #fff; }
+  .nav-toggle { display: none; }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 76px 0 54px; }
+  .status-line {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 26px;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 7px 13px;
+    border-radius: 999px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--live);
+    box-shadow: 0 0 0 0 rgba(24,160,88,0.5);
+    flex: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .dot { animation: pulse 2.4s infinite; }
+  }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(24,160,88,0.45); }
+    70% { box-shadow: 0 0 0 7px rgba(24,160,88,0); }
+    100% { box-shadow: 0 0 0 0 rgba(24,160,88,0); }
+  }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(2.3rem, 6vw, 4rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    margin: 0 0 22px;
+    max-width: 16ch;
+  }
+  .hero h1 .hl { color: var(--accent); }
+  .hero-lead {
+    font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+    color: var(--muted);
+    max-width: 56ch;
+    margin: 0 0 34px;
+  }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 46px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 500;
+    padding: 11px 18px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    transition: transform .12s, border-color .15s, background .15s;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-ink); }
+
+  /* telemetry tiles */
+  .telemetry {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    overflow: hidden;
+  }
+  .tile { background: var(--surface); padding: 20px 20px; }
+  .tile .num {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .tile .lbl {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-top: 9px;
+  }
+
+  /* ---------- section scaffold ---------- */
+  section { padding: 64px 0; }
+  .sec-head { margin-bottom: 36px; max-width: 60ch; }
+  .sec-head h2 {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: clamp(1.7rem, 3.6vw, 2.4rem);
+    letter-spacing: -0.02em;
+    margin: 14px 0 0;
+  }
+  .sec-head p { color: var(--muted); margin: 12px 0 0; }
+
+  /* ---------- projects ---------- */
+  .projects { display: flex; flex-direction: column; gap: 22px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 28px;
+    transition: border-color .18s, box-shadow .18s, transform .18s;
+  }
+  .card:hover {
+    border-color: #C2CCD6;
+    box-shadow: 0 14px 34px -22px rgba(17,26,34,0.35);
+    transform: translateY(-2px);
+  }
+  .card-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 18px; flex-wrap: wrap;
+  }
+  .card-title {
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 1.4rem;
+    letter-spacing: -0.015em;
+    display: inline-flex; align-items: center; gap: 11px;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 4px 9px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .badge.live { color: var(--live); background: rgba(24,160,88,0.10); }
+  .badge.wip  { color: #B45309; background: rgba(217,119,6,0.10); }
+  .card-desc { color: var(--muted); margin: 12px 0 0; max-width: 70ch; }
+
+  /* flow strip — the signature element */
+  .flow {
+    margin: 22px 0 4px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 0;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .flow .stage {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 6px 11px;
+    border-radius: 7px;
+    white-space: nowrap;
+  }
+  .flow .arrow {
+    width: 26px; height: 1.5px;
+    background: linear-gradient(90deg, var(--accent), rgba(31,77,240,0.25));
+    position: relative;
+    flex: none;
+  }
+  .flow .arrow::after {
+    content: "";
+    position: absolute; right: 0; top: 50%;
+    transform: translateY(-50%);
+    border-left: 5px solid var(--accent);
+    border-top: 3.5px solid transparent;
+    border-bottom: 3.5px solid transparent;
+  }
+
+  .metrics {
+    display: flex; flex-wrap: wrap; gap: 26px;
+    margin: 22px 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .metric .m-num {
+    font-family: var(--display);
+    font-weight: 600; font-size: 1.45rem; letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .metric .m-lbl {
+    font-family: var(--mono);
+    font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted); margin-top: 7px;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; }
+  .chip {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    padding: 5px 10px; border-radius: 6px;
+  }
+  .card-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 0; }
+  .link {
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    color: var(--accent);
+    display: inline-flex; align-items: center; gap: 6px;
+    border-bottom: 1px solid transparent;
+    transition: border-color .15s;
+  }
+  .link:hover { border-color: var(--accent); }
+  .link .arr { transition: transform .15s; }
+  .link:hover .arr { transform: translate(2px,-2px); }
+  .note {
+    font-family: var(--mono); font-size: 12px; color: var(--faint);
+    margin: 16px 0 0; padding-left: 13px; border-left: 2px solid var(--line);
+  }
+
+  /* ---------- experience ---------- */
+  .xp {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 30px;
+  }
+  .xp-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: baseline; }
+  .xp-role { font-family: var(--display); font-weight: 600; font-size: 1.35rem; letter-spacing: -0.015em; }
+  .xp-co { color: var(--accent); }
+  .xp-when { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+  .xp-meta { font-family: var(--mono); font-size: 12.5px; color: var(--faint); margin-top: 6px; }
+  .xp-summary { color: var(--ink); font-size: 15.5px; margin: 18px 0 0; max-width: 80ch; }
+  .xp-list { list-style: none; padding: 0; margin: 22px 0 0; display: grid; gap: 13px; }
+  .xp-list li { position: relative; padding-left: 24px; color: var(--muted); max-width: 78ch; }
+  .xp-list li strong { color: var(--ink); font-weight: 600; }
+  .xp-list li::before {
+    content: ""; position: absolute; left: 2px; top: 11px;
+    width: 7px; height: 7px; border-radius: 2px;
+    background: var(--accent);
+  }
+
+  /* ---------- skills ---------- */
+  .skills-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .skill-group {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    padding: 22px 24px;
+  }
+  .skill-group h3 {
+    font-family: var(--mono);
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 14px; font-weight: 600;
+  }
+  .skill-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill {
+    font-family: var(--body); font-size: 14px; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line-soft);
+    padding: 6px 12px; border-radius: 7px;
+  }
+
+  /* ---------- about + education two-col ---------- */
+  .two { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; align-items: start; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r); padding: 28px;
+  }
+  .panel p { color: var(--muted); margin: 0 0 16px; }
+  .panel p:last-child { margin-bottom: 0; }
+  .panel p strong { color: var(--ink); font-weight: 600; }
+  .edu-item { padding: 16px 0; border-bottom: 1px solid var(--line-soft); }
+  .edu-item:first-of-type { padding-top: 0; }
+  .edu-item:last-child { border-bottom: 0; padding-bottom: 0; }
+  .edu-deg { font-family: var(--display); font-weight: 600; font-size: 1.05rem; }
+  .edu-meta { font-family: var(--mono); font-size: 12.5px; color: var(--muted); margin-top: 5px; }
+
+  /* ---------- seeking band ---------- */
+  .seeking-sec { padding: 0; }
+  .seeking {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--ink); color: #fff;
+    border-radius: var(--r); overflow: hidden;
+    margin-top: 4px;
+  }
+  .seeking-col { padding: 22px 26px; border-right: 1px solid rgba(255,255,255,0.12); }
+  .seeking-col:last-child { border-right: 0; }
+  .seeking-col h3 {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: #9DB4FF; margin: 0 0 8px; font-weight: 600;
+  }
+  .seeking-col p { margin: 0; font-size: 15px; color: rgba(255,255,255,0.92); line-height: 1.5; }
+  @media (max-width: 640px) {
+    .seeking { grid-template-columns: 1fr; }
+    .seeking-col { border-right: 0; border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .seeking-col:last-child { border-bottom: 0; }
+  }
+
+  /* ---------- contact / footer ---------- */
+  .contact { text-align: center; padding: 78px 0 34px; }
+  .contact h2 {
+    font-family: var(--display); font-weight: 700;
+    font-size: clamp(2rem, 5vw, 3.1rem); letter-spacing: -0.025em; margin: 16px 0 0;
+  }
+  .contact p { color: var(--muted); margin: 16px auto 30px; max-width: 48ch; }
+  .contact-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+  footer {
+    border-top: 1px solid var(--line);
+    margin-top: 56px; padding: 26px 0;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--faint);
+  }
+
+  /* ---------- reveal animation ---------- */
+  .reveal { opacity: 0; transform: translateY(16px); transition: opacity .6s ease, transform .6s ease; }
+  .reveal.in { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 860px) {
+    .telemetry { grid-template-columns: repeat(2, 1fr); }
+    .skills-grid { grid-template-columns: 1fr; }
+    .two { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .nav-toggle {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 9px;
+      background: var(--surface); cursor: pointer;
+    }
+    .nav-links.open {
+      display: flex; flex-direction: column; align-items: stretch;
+      position: absolute; top: 62px; left: 0; right: 0;
+      background: var(--canvas); border-bottom: 1px solid var(--line);
+      padding: 12px 24px 18px; gap: 2px;
+    }
+    .nav-links.open a { padding: 11px 12px; }
+    .nav-links.open .nav-cta { margin: 8px 0 0; text-align: center; }
+    .hero { padding: 52px 0 40px; }
+    section { padding: 50px 0; }
+    .card { padding: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="Tejas Naik — home">
+      <span class="mark" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 32 32"><path d="M8 11h16M11 11v13" stroke="#1F4DF0" stroke-width="2.6" stroke-linecap="round"/><circle cx="23" cy="22" r="3" fill="#18A058"/></svg>
+      </span>
+      Tejas Naik
+    </a>
+    <nav class="nav-links" id="navlinks">
+      <a href="#experience">Experience</a>
+      <a href="#work">Work</a>
+      <a href="#skills">Skills</a>
+      <a href="#about">About</a>
+      <!-- TODO: point this at your hosted resume PDF -->
+      <a class="nav-cta" href="#" data-fill="resume">Résumé</a>
+    </nav>
+    <button class="nav-toggle" id="navtoggle" aria-label="Toggle menu" aria-expanded="false">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <h1 class="reveal">I build production data &amp; ML systems — from streaming ingestion to <span class="hl">deployment</span>.</h1>
+    <p class="hero-lead reveal">
+      Data &amp; ML engineer with ~3 years in production data platforms, now finishing an MS in Data Science at CU Boulder.
+      I work end-to-end: streaming ingestion, medallion pipelines, model training, deployment, and the observability that keeps it all honest.
+      Open to data engineering and ML engineering roles in the Denver area.
+    </p>
+    <div class="hero-actions reveal">
+      <!-- TODO: point this at your hosted resume PDF -->
+      <a class="btn primary" href="#" data-fill="resume">Résumé (PDF) <span aria-hidden="true">↓</span></a>
+      <a class="btn" href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <!-- TODO: replace with your LinkedIn URL -->
+      <a class="btn" href="#" data-fill="linkedin" target="_blank" rel="noopener">LinkedIn</a>
+      <a class="btn" href="mailto:tejasnaik137@gmail.com">Email</a>
+    </div>
+    <div class="telemetry reveal" aria-label="Impact at a glance">
+      <div class="tile"><div class="num">~3 yrs</div><div class="lbl">Production data eng</div></div>
+      <div class="tile"><div class="num">70M+</div><div class="lbl">Records / day processed</div></div>
+      <div class="tile"><div class="num">100+</div><div class="lbl">Dashboard stakeholders</div></div>
+      <div class="tile"><div class="num">935K</div><div class="lbl">ICU windows scored</div></div>
+      <div class="tile"><div class="num">5</div><div class="lbl">Systems shipped or building</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SEEKING -->
+<section id="seeking" class="seeking-sec">
+  <div class="wrap">
+    <div class="seeking reveal">
+      <div class="seeking-col">
+        <h3>Seeking</h3>
+        <p>Data Engineering · ML Engineering · Data Platform Engineering</p>
+      </div>
+      <div class="seeking-col">
+        <h3>Location</h3>
+        <p>Denver · Boulder · Remote</p>
+      </div>
+      <div class="seeking-col">
+        <h3>Availability</h3>
+        <!-- confirmed -->
+        <p>Internships &amp; co-ops immediately · full-time from 2027</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Experience</span>
+      <h2>Production data platforms at scale.</h2>
+    </div>
+    <div class="xp reveal">
+      <div class="xp-head">
+        <div>
+          <div class="xp-role">Data Engineer · Data Scientist <span class="xp-co">@ LTIMindtree</span></div>
+          <div class="xp-meta">Clients: Carestream Health · World Vision Canada</div>
+          <div class="xp-meta">Domains: BFSI · Life Sciences · Manufacturing</div>
+        </div>
+        <!-- TODO: confirm your exact dates -->
+        <div class="xp-when">Aug 2022 – Jul 2025</div>
+      </div>
+      <!-- TODO: add Snowflake / SQL Server here if accurate for these engagements -->
+      <p class="xp-summary">Built production data platforms for Carestream Health and World Vision Canada on Azure Data Factory, Synapse, and Power BI.</p>
+      <ul class="xp-list">
+        <li>Built and ran <strong>Azure Data Factory / Synapse</strong> pipelines ingesting <strong>70M+ records per day</strong> into a four-layer data model.</li>
+        <li>Designed <strong>SCD and hash-based change detection</strong> so downstream tables stayed correct and incremental rather than full-reloaded.</li>
+        <li>Shipped <strong>CI/CD across four environments</strong> and a fully automated orchestration workflow, reducing manual release effort.</li>
+        <li>Delivered <strong>Power BI dashboards for 100+ stakeholders</strong>, turning the pipeline output into decisions people actually used.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- WORK -->
+<section id="work">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Selected work</span>
+      <h2>End-to-end systems, built to run — not to demo.</h2>
+      <p>Each is deployed (or actively shipping), with the architecture, the numbers, and the limitations stated plainly. Links go to live demos, code, and published models.</p>
+    </div>
+
+    <div class="projects">
+
+      <!-- MarketStream -->
+      <article class="card reveal">
+        <div class="card-top">
+          <div class="card-title">MarketStream
+            <span class="badge live"><span class="dot" style="width:7px;height:7px;animation:none"></span>Deployed</span>
+          </div>
+        </div>
+        <!-- TODO: confirm the exact prediction horizon and baseline below -->
+        <p class="card-desc">Real-time crypto trading-signal pipeline running on AWS EC2 — from a live Binance order-book feed through streaming features to a model that predicts short-horizon price-move direction from order-book microstructure, with full observability and CI/CD around it.</p>
+        <div class="flow" aria-label="Architecture">
+          <span class="stage">Binance WS</span><span class="arrow"></span>
+          <span class="stage">Kafka</span><span class="arrow"></span>
+          <span class="stage">DuckDB</span><span class="arrow"></span>
+          <span class="stage">LightGBM</span><span class="arrow"></span>
+          <span class="stage">FastAPI + Grafana</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="m-num">0.785</div><div class="m-lbl">AUROC · price-direction</div></div>
+          <div class="metric"><div class="m-num">Live</div><div class="m-lbl">Prometheus + Grafana</div></div>
+          <div class="metric"><div class="m-num">Auto</div><div class="m-lbl">Drift detect + SNS alerts</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip">Kafka</span><span class="chip">Docker</span><span class="chip">DuckDB</span>
+          <span class="chip">LightGBM</span><span class="chip">Prometheus</span><span class="chip">Grafana</span>
+          <span class="chip">MLflow</span><span class="chip">GitHub Actions</span><span class="chip">AWS EC2 / S3</span>
+        </div>
+        <div class="card-links">
+          <a class="link" href="marketstream.html">Case study <span class="arr" aria-hidden="true">→</span></a>
+          <!-- TODO: link the MarketStream repo -->
+          <a class="link" href="#" data-fill="repo">Code <span class="arr" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="note">Streaming moved from Spark to DuckDB after OOM on a t3.small — a deliberate trade of distributed overhead for a footprint that fits the instance.</p>
+      </article>
+
+      <!-- SepsisSentinel -->
+      <article class="card reveal">
+        <div class="card-top">
+          <div class="card-title">SepsisSentinel
+            <span class="badge live"><span class="dot" style="width:7px;height:7px;animation:none"></span>Deployed</span>
+          </div>
+        </div>
+        <p class="card-desc">Real-time ICU sepsis-risk prediction on MIMIC-IV: a streaming pipeline that windows patient vitals, engineers temporal features, scores risk, and serves predictions — with a retrieval layer for clinical context.</p>
+        <div class="flow" aria-label="Architecture">
+          <span class="stage">MIMIC-IV</span><span class="arrow"></span>
+          <span class="stage">Kafka</span><span class="arrow"></span>
+          <span class="stage">Delta Lake</span><span class="arrow"></span>
+          <span class="stage">XGBoost</span><span class="arrow"></span>
+          <span class="stage">FastAPI · Railway</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="m-num">0.810</div><div class="m-lbl">Test AUROC · held-out patients</div></div>
+          <div class="metric"><div class="m-num">~935K</div><div class="m-lbl">Prediction windows</div></div>
+          <div class="metric"><div class="m-num">63</div><div class="m-lbl">Engineered features</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip">Kafka</span><span class="chip">PySpark</span><span class="chip">DuckDB</span>
+          <span class="chip">Delta Lake</span><span class="chip">XGBoost</span><span class="chip">FastAPI</span>
+          <span class="chip">RAG · sentence-transformers</span><span class="chip">Railway</span>
+        </div>
+        <div class="card-links">
+          <a class="link" href="sepsis.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
+          <!-- TODO: link the SepsisSentinel repo + live demo -->
+          <a class="link" href="#" data-fill="repo">Code <span class="arr" aria-hidden="true">↗</span></a>
+          <a class="link" href="#" data-fill="demo">Live demo <span class="arr" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="note">Lag/delta features drove the gain to 0.810; subgroup analysis was run to check the model holds across patient cohorts rather than reporting a single headline number.</p>
+      </article>
+
+      <!-- SupplyIQ -->
+      <article class="card reveal">
+        <div class="card-top">
+          <div class="card-title">SupplyIQ
+            <span class="badge live"><span class="dot" style="width:7px;height:7px;animation:none"></span>Deployed</span>
+          </div>
+        </div>
+        <p class="card-desc">Supply-chain analytics platform on a medallion architecture — ingesting the DataCo dataset through Databricks into Snowflake, with demand forecasting feeding a Power BI service layer.</p>
+        <div class="flow" aria-label="Architecture">
+          <span class="stage">DataCo</span><span class="arrow"></span>
+          <span class="stage">Databricks · Bronze→Gold</span><span class="arrow"></span>
+          <span class="stage">Snowflake</span><span class="arrow"></span>
+          <span class="stage">Prophet / XGBoost</span><span class="arrow"></span>
+          <span class="stage">Power BI</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="m-num">Medallion</div><div class="m-lbl">Bronze · Silver · Gold</div></div>
+          <div class="metric"><div class="m-num">Prophet + XGBoost</div><div class="m-lbl">Demand forecasting</div></div>
+          <!-- TODO: replace with your real forecast result, e.g. "12% MAPE" or "320 SKUs forecasted" -->
+          <div class="metric"><div class="m-num" data-fill="supplyiq-result">— MAPE</div><div class="m-lbl">Add your forecast accuracy</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip">Databricks</span><span class="chip">Snowflake</span><span class="chip">Power BI</span>
+          <span class="chip">Spark</span><span class="chip">Prophet</span><span class="chip">XGBoost</span>
+        </div>
+        <div class="card-links">
+          <a class="link" href="supplyiq.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
+          <!-- TODO: link the SupplyIQ repo -->
+          <a class="link" href="#" data-fill="repo">Code <span class="arr" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="note">Full medallion build, end to end: DataCo ingested through Databricks into Snowflake, with Prophet/XGBoost forecasts published to a Power BI Service layer.</p>
+      </article>
+
+      <!-- GridMind -->
+      <article class="card reveal">
+        <div class="card-top">
+          <div class="card-title">GridMind
+            <span class="badge wip">In progress</span>
+          </div>
+        </div>
+        <p class="card-desc">A compliance-grade retrieval system for energy reliability standards. It ingests NERC standards, FERC orders, and NREL reports through an event-driven AWS pipeline, then answers plain-English compliance questions with cited, version-aware results — each requirement tagged by how binding it is.</p>
+        <div class="flow" aria-label="Architecture">
+          <span class="stage">NERC / FERC docs</span><span class="arrow"></span>
+          <span class="stage">Step Functions · Lambda</span><span class="arrow"></span>
+          <span class="stage">Aurora · pgvector</span><span class="arrow"></span>
+          <span class="stage">Hybrid retrieval</span><span class="arrow"></span>
+          <span class="stage">FastAPI · Streamlit</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="m-num">4 signals</div><div class="m-lbl">Semantic + keyword + freshness + obligation</div></div>
+          <div class="metric"><div class="m-num">shall / should / may</div><div class="m-lbl">DistilBERT obligation classifier</div></div>
+          <div class="metric"><div class="m-num">Recall@5 · MRR</div><div class="m-lbl">4-strategy retrieval benchmark</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip">AWS Lambda</span><span class="chip">Step Functions</span><span class="chip">EventBridge</span>
+          <span class="chip">Aurora · pgvector</span><span class="chip">DynamoDB</span><span class="chip">sentence-transformers</span>
+          <span class="chip">DistilBERT</span><span class="chip">NetworkX</span><span class="chip">FastAPI</span><span class="chip">Streamlit</span>
+        </div>
+        <div class="card-links">
+          <a class="link" href="gridmind.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
+          <!-- TODO: link the GridMind repo once public -->
+          <a class="link" href="#" data-fill="repo">Code <span class="arr" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="note">Active build. The retrieval-quality contribution is an obligation boost — a mandatory "shall" requirement outranks an advisory "should" even when both match the query — plus cross-reference graph expansion so a standard that cites another surfaces both. Benchmark numbers go live once measured.</p>
+      </article>
+
+
+      <!-- SAR Dark Ship -->
+      <article class="card reveal">
+        <div class="card-top">
+          <div class="card-title">SAR Vessel Detection
+            <span class="badge wip">In progress</span>
+          </div>
+        </div>
+        <p class="card-desc">Oriented-bounding-box detection of <strong>AIS-dark vessel candidates</strong> in Sentinel-1 SAR imagery — a YOLOv11n-OBB model trained on RSDD-SAR, published with weights and an interactive demo.</p>
+        <div class="flow" aria-label="Architecture">
+          <span class="stage">Sentinel-1 SAR</span><span class="arrow"></span>
+          <span class="stage">YOLOv11n-OBB</span><span class="arrow"></span>
+          <span class="stage">OBB candidates</span><span class="arrow"></span>
+          <span class="stage">Gradio · HF Spaces</span>
+        </div>
+        <div class="metrics">
+          <div class="metric"><div class="m-num">0.938</div><div class="m-lbl">mAP@0.5 overall</div></div>
+          <div class="metric"><div class="m-num">0.971</div><div class="m-lbl">mAP@0.5 offshore</div></div>
+          <div class="metric"><div class="m-num">0.763</div><div class="m-lbl">mAP@0.5 inshore</div></div>
+        </div>
+        <div class="chips">
+          <span class="chip">YOLOv11n-OBB</span><span class="chip">PyTorch</span><span class="chip">Sentinel-1 GRD</span>
+          <span class="chip">Gradio</span><span class="chip">HuggingFace Hub</span>
+        </div>
+        <div class="card-links">
+          <a class="link" href="sar.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
+          <a class="link" href="https://huggingface.co/tejassnaikk/rsdd-yolo11n-obb-v1" target="_blank" rel="noopener">Model weights <span class="arr" aria-hidden="true">↗</span></a>
+          <!-- TODO: confirm/replace your HF Spaces demo URL -->
+          <a class="link" href="https://huggingface.co/tejassnaikk" target="_blank" rel="noopener">Live demo <span class="arr" aria-hidden="true">↗</span></a>
+        </div>
+        <p class="note">Outputs are AIS-dark vessel <em>candidates</em>, not confirmed illegal activity. Cross-domain evaluation surfaced offshore under-sizing and inshore false positives on port infrastructure — characterized rather than hidden.</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- SKILLS -->
+<section id="skills">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Toolkit</span>
+      <h2>What I reach for.</h2>
+      <p>Grouped by what they do, not stacked as a keyword wall.</p>
+    </div>
+    <div class="skills-grid">
+      <div class="skill-group reveal">
+        <h3>Data Engineering</h3>
+        <div class="skill-list">
+          <span class="skill">Kafka</span><span class="skill">Spark</span><span class="skill">Delta Lake</span>
+          <span class="skill">Snowflake</span><span class="skill">Databricks</span><span class="skill">dbt</span><span class="skill">DuckDB</span>
+        </div>
+      </div>
+      <div class="skill-group reveal">
+        <h3>Cloud &amp; Platform</h3>
+        <div class="skill-list">
+          <span class="skill">AWS</span><span class="skill">Azure</span><span class="skill">Docker</span>
+          <span class="skill">GitHub Actions</span><span class="skill">Lambda / Step Functions</span>
+        </div>
+      </div>
+      <div class="skill-group reveal">
+        <h3>ML &amp; MLOps</h3>
+        <div class="skill-list">
+          <span class="skill">XGBoost</span><span class="skill">LightGBM</span><span class="skill">PyTorch</span>
+          <span class="skill">RAG</span><span class="skill">MLflow</span><span class="skill">Prometheus / Grafana</span>
+        </div>
+      </div>
+      <div class="skill-group reveal">
+        <h3>Languages &amp; BI</h3>
+        <div class="skill-list">
+          <span class="skill">Python</span><span class="skill">SQL</span><span class="skill">PySpark</span>
+          <span class="skill">Power BI</span><span class="skill">Tableau</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT + EDUCATION -->
+<section id="about">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">About</span>
+      <h2>How I think about the work.</h2>
+    </div>
+    <div class="two">
+      <div class="panel reveal">
+        <p>I started in <strong>electrical engineering</strong>, which is still how I think about data work — as systems with inputs, failure modes, and signals you measure rather than assume. That mindset is why my projects tend to be fully deployed with observability around them, not notebooks that work once.</p>
+        <p>I like to understand <strong>why</strong> a design holds before writing the <strong>how</strong>. When something doesn't fit — Spark blowing past memory on a small instance, a detector under-sizing offshore — I'd rather state the trade-off plainly than paper over it. Defensible and honest beats impressive and brittle.</p>
+        <p>Right now I'm finishing my MS while building portfolio systems end-to-end, and looking for a <strong>data or ML engineering role in the Denver area</strong> where shipping reliable systems is the point.</p>
+      </div>
+      <div class="panel reveal">
+        <div class="edu-item">
+          <div class="edu-deg">MS, Data Science</div>
+          <div class="edu-meta">University of Colorado Boulder · Aug 2025 – Apr 2027</div>
+        </div>
+        <div class="edu-item">
+          <div class="edu-deg">BE, Electrical Engineering</div>
+          <div class="edu-meta">Undergraduate</div>
+        </div>
+        <div class="edu-item">
+          <div class="edu-deg">Machine Learning — Stanford / Coursera</div>
+          <div class="edu-meta">Certification</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact" id="contact">
+  <div class="wrap">
+    <span class="eyebrow" style="justify-content:center">Get in touch</span>
+    <h2>Let's build something that stays up.</h2>
+    <p>Open to data engineering and ML engineering roles in Denver — and to a good conversation about any of the systems above.</p>
+    <div class="contact-actions">
+      <a class="btn primary" href="mailto:tejasnaik137@gmail.com">Email me</a>
+      <a class="btn" href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn" href="https://huggingface.co/tejassnaikk" target="_blank" rel="noopener">Hugging Face</a>
+      <!-- TODO: replace with your LinkedIn URL -->
+      <a class="btn" href="#" data-fill="linkedin" target="_blank" rel="noopener">LinkedIn</a>
+    </div>
+    <footer>
+      <span>© <span id="year"></span> Tejas Naik</span>
+      <span>Denver, Colorado</span>
+    </footer>
+  </div>
+</section>
+
+</main>
+
+<script>
+  // year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // mobile nav
+  const toggle = document.getElementById('navtoggle');
+  const links = document.getElementById('navlinks');
+  toggle.addEventListener('click', () => {
+    const open = links.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', open);
+  });
+  links.querySelectorAll('a').forEach(a =>
+    a.addEventListener('click', () => {
+      links.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+    })
+  );
+
+  // scroll reveal
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  } else {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+  }
+
+  // active nav link on scroll
+  const sections = ['work','experience','skills','about'].map(id => document.getElementById(id));
+  const navMap = {};
+  document.querySelectorAll('#navlinks a[href^="#"]').forEach(a => { navMap[a.getAttribute('href').slice(1)] = a; });
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        Object.values(navMap).forEach(a => a.classList.remove('active'));
+        if (navMap[e.target.id]) navMap[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  sections.forEach(s => s && spy.observe(s));
+</script>
+</body>
+</html>

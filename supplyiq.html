@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SupplyIQ — Case Study · Tejas Naik</title>
+<meta name="description" content="SupplyIQ case study: supply-chain analytics on a medallion lakehouse — Databricks, Snowflake, Power BI — with Prophet/XGBoost demand forecasting." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #ECEFF3; --surface: #FFFFFF; --surface-2: #F6F8FA;
+    --ink: #111A22; --muted: #5A6671; --faint: #8A95A0;
+    --line: #D6DCE3; --line-soft: #E4E9EE;
+    --accent: #1F4DF0; --accent-ink: #0F2FB0; --accent-soft: rgba(31,77,240,0.08);
+    --live: #18A058; --draft: #B45309; --draft-bg: rgba(217,119,6,0.07);
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --maxw: 880px; --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px; background-position: -1px -1px;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent); display: inline-block; }
+
+  /* nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(236,239,243,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  .back { font-family: var(--mono); font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color .15s; }
+  .back:hover { color: var(--accent); }
+  .nav-right { display: flex; gap: 6px; }
+  .nav-right a { font-family: var(--mono); font-size: 13px; padding: 7px 12px; border-radius: 8px; color: var(--muted); transition: color .15s, background .15s; }
+  .nav-right a:hover { color: var(--ink); background: var(--accent-soft); }
+
+  /* header */
+  header.cs { padding: 60px 0 36px; }
+  header.cs h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem,7vw,3.6rem); letter-spacing: -0.025em; margin: 18px 0 14px; line-height: 1.02; }
+  .lede { font-size: clamp(1.05rem,2.4vw,1.3rem); color: var(--muted); margin: 0 0 28px; }
+  .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .badge.live { color: var(--live); background: rgba(24,160,88,0.10); }
+  .badge.wip { color: var(--draft); background: rgba(217,119,6,0.10); }
+  .badge .d { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+
+  .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 28px 0 0; }
+  .meta .cell { background: var(--surface); padding: 16px 18px; }
+  .meta .k { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+  .meta .v { font-size: 14px; margin-top: 5px; font-weight: 500; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); transition: transform .12s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-ink); }
+
+  /* sections */
+  section.cs { padding: 30px 0; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.1em; }
+  h2.cs { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem,3.4vw,2rem); letter-spacing: -0.02em; margin: 8px 0 18px; }
+  h3.cs { font-family: var(--display); font-weight: 600; font-size: 1.2rem; margin: 28px 0 10px; letter-spacing: -0.01em; }
+  p.cs { color: #25303A; margin: 0 0 16px; }
+  .cs strong { font-weight: 600; color: var(--ink); }
+
+  /* summary callout */
+  .summary { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 24px 26px; margin: 8px 0 8px; }
+  .summary p { margin: 0; color: #25303A; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 28px; margin: 20px 0 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+  .kpi .n { font-family: var(--display); font-weight: 600; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1; }
+  .kpi .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 7px; }
+
+  /* architecture diagram */
+  .arch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; margin: 8px 0 18px; }
+  .arch .lane-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 12px; }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 0; font-family: var(--mono); font-size: 13px; }
+  .flow .stage { background: var(--surface-2); border: 1px solid var(--line); padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
+  .flow .stage.model { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .flow .arrow { width: 26px; height: 1.5px; background: linear-gradient(90deg,var(--accent),rgba(31,77,240,0.25)); position: relative; flex: none; }
+  .flow .arrow::after { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border-left: 5px solid var(--accent); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+  .cross { margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cross .item { font-family: var(--mono); font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); padding: 9px 12px; border-radius: 8px; }
+  .cross .item b { color: var(--ink); font-weight: 600; }
+  .host-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin: 14px 0 0; text-align: center; }
+
+  /* decision cards */
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; margin: 0 0 14px; }
+  .decision h4 { font-family: var(--display); font-weight: 600; font-size: 1.08rem; margin: 0 0 4px; }
+  .decision .tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.05em; }
+  .decision p { margin: 10px 0 0; color: #25303A; }
+
+  /* lessons list */
+  .lessons { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 14px; }
+  .lessons li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .lessons li b { font-family: var(--display); font-weight: 600; }
+  .lessons li span { display: block; color: var(--muted); margin-top: 4px; }
+
+  /* draft / editor note — DELETE these before publishing */
+  .draft { background: var(--draft-bg); border: 1px dashed var(--draft); border-radius: 10px; padding: 12px 16px; margin: 10px 0 18px; font-family: var(--mono); font-size: 12.5px; color: var(--draft); line-height: 1.55; }
+  .draft b { color: var(--draft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 30px 0; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; align-items: center; }
+  footer .name { font-family: var(--display); font-weight: 600; }
+  footer .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 13px; }
+  footer .links a { color: var(--muted); } footer .links a:hover { color: var(--accent); }
+
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  @media (max-width: 700px) {
+    .meta { grid-template-columns: repeat(2,1fr); }
+    .cross { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="back" href="index.html"><span aria-hidden="true">←</span> Tejas Naik</a>
+    <div class="nav-right">
+      <a href="#" data-fill="repo">Code ↗</a>
+    </div>
+  </div>
+</header>
+
+<header class="cs">
+  <div class="wrap">
+    <span class="eyebrow">Case study</span>
+    <h1>SupplyIQ</h1>
+    <p class="lede">Supply-chain analytics on a medallion lakehouse — the DataCo dataset ingested through Databricks into Snowflake, with demand forecasting published to Power BI.</p>
+    <span class="badge live"><span class="d" aria-hidden="true"></span>Deployed</span>
+
+    <div class="meta">
+      <div class="cell"><div class="k">Role</div><div class="v">Solo — design & build</div></div>
+      <div class="cell"><div class="k">Timeline</div><div class="v" data-fill="timeline">—</div></div>
+      <div class="cell"><div class="k">Type</div><div class="v">Personal project</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">Complete</div></div>
+    </div>
+
+    <div class="cta">
+      <a class="btn primary" href="#" data-fill="repo">View code ↗</a>
+      <a class="btn" href="index.html">← All projects</a>
+    </div>
+  </div>
+</header>
+
+<section class="cs">
+  <div class="wrap">
+    <div class="summary">
+      <p>SupplyIQ takes the DataCo supply-chain dataset through a medallion architecture — Bronze, Silver, Gold on Databricks — into Snowflake as the serving warehouse, then layers Prophet + XGBoost demand forecasting and surfaces it in Power BI Service. The whole thing runs on free-tier compute, which was a deliberate constraint.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="n">Medallion</div><div class="l">Bronze · Silver · Gold</div></div>
+        <div class="kpi"><div class="n">Prophet + XGBoost</div><div class="l">Demand forecasting</div></div>
+        <div class="kpi"><div class="n" data-fill="supplyiq-result">— MAPE</div><div class="l">Forecast accuracy</div></div>
+        <div class="kpi"><div class="n">Power BI</div><div class="l">Service dashboard</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">01</span>
+    <h2 class="cs">The problem</h2>
+    <p class="cs">Supply-chain teams need clean analytics and forward-looking demand forecasts, but raw transactional data is messy, multi-grain, and hard to trust. The project builds a layered analytics pipeline that ends in demand forecasts a planner could actually use — with the transformations structured so bad upstream data can't silently corrupt the numbers downstream.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      State the business question precisely: forecasting demand for what (units per product? per product-region?) and over what horizon (weekly, the next N periods). One concrete sentence here makes the whole project legible.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">02</span>
+    <h2 class="cs">Architecture</h2>
+    <p class="cs">A medallion lakehouse feeds a serving warehouse, which feeds a forecasting layer and a BI dashboard.</p>
+    <div class="arch">
+      <p class="lane-label">Data path</p>
+      <div class="flow" aria-label="SupplyIQ data path">
+        <span class="stage">DataCo</span><span class="arrow"></span><span class="stage">Databricks · Bronze→Gold</span><span class="arrow"></span><span class="stage">Snowflake</span><span class="arrow"></span><span class="stage model">Prophet / XGBoost</span><span class="arrow"></span><span class="stage">Power BI</span>
+      </div>
+      <div class="cross">
+        <div class="item"><b>Lakehouse</b> — medallion (Bronze/Silver/Gold) on Databricks</div>
+        <div class="item"><b>Warehouse</b> — Snowflake as the serving layer for BI</div>
+        <div class="item"><b>Forecasting</b> — Prophet + XGBoost ensemble</div>
+        <div class="item"><b>BI</b> — published to Power BI Service</div>
+      </div>
+      <p class="host-note">▸ built end to end on free-tier compute (Databricks Free Edition, Serverless)</p>
+    </div>
+    <p class="cs">Raw DataCo records land as Bronze, get cleaned and conformed in Silver, and roll up to business-ready Gold marts — all on Databricks. Curated marts are pushed to Snowflake for fast BI serving. A forecasting layer (Prophet + XGBoost) produces demand forecasts, and Power BI Service presents them to stakeholders.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add row counts per layer and the refresh cadence (one-off vs scheduled). If the Power BI dashboard is shareable, link it — a screenshot in here would also land well.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">03</span>
+    <h2 class="cs">Key decisions &amp; tradeoffs</h2>
+    <p class="cs">Where the layering and tool choices earn their keep.</p>
+    <div class="decision">
+      <span class="tag">Architecture</span>
+      <h4>Medallion (Bronze / Silver / Gold)</h4>
+      <p>Separating raw, cleaned, and business-ready layers makes every transformation debuggable and reprocessable. If upstream data is wrong, you fix Silver and rebuild Gold — bad data never silently reaches the forecasts or the dashboard.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Platform</span>
+      <h4>Databricks for compute, Snowflake for serving</h4>
+      <p>Build the lakehouse on free serverless Databricks, then push curated marts to Snowflake where BI queries are fast and cheap. Right tool per layer instead of forcing one platform to do both, and free-tier throughout.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Forecasting</span>
+      <h4>Prophet and XGBoost, not one or the other</h4>
+      <p>Prophet captures trend and seasonality cleanly and handles holidays; XGBoost captures nonlinear effects and exogenous drivers Prophet can't. Using both covers each other's blind spots.</p>
+      <div class="draft" style="margin-top:14px"><b>Editor note.</b> Say how they combine — an ensemble, or Prophet for some series and XGBoost for others — and which performed better.</div>
+    </div>
+    <div class="decision">
+      <span class="tag">Serving</span>
+      <h4>Power BI Service for stakeholders</h4>
+      <p>Publishing to a hosted Power BI dashboard makes the forecasts consumable by non-technical planners — the same delivery pattern I used for 100+ stakeholders at LTIMindtree.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">04</span>
+    <h2 class="cs">Results</h2>
+    <p class="cs">What the pipeline delivers:</p>
+    <ul class="lessons">
+      <li><b>End-to-end medallion lakehouse</b><span>DataCo → Bronze/Silver/Gold → Snowflake, fully built.</span></li>
+      <li><b>Demand forecasts in Power BI Service</b><span>Prophet + XGBoost output surfaced to stakeholders.</span></li>
+      <li><b>— MAPE / forecast accuracy</b><span>Add your real number here — this is the single most important missing metric.</span></li>
+      <li><b>Runs on free-tier compute</b><span>Databricks Free Edition + Serverless, no infra cost.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      The forecast accuracy is the headline result and it's currently blank. Pull the real MAPE (or WAPE, or # of SKUs/series forecasted) and put it in the KPI tile and the results list — without it the project reads as unfinished even though it isn't.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">05</span>
+    <h2 class="cs">What broke, and what I'd do differently</h2>
+    <p class="cs">What the constraints taught.</p>
+    <ul class="lessons">
+      <li><b>Free-tier compute is a real constraint</b><span>Serverless limits shaped how I sized jobs and where work ran — a useful discipline.</span></li>
+      <li><b>Layering pays off when data is messy</b><span>The medallion split made it easy to isolate and fix data-quality issues without touching the forecasts.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add an honest 'what I'd do differently' — e.g. backtesting the forecast over multiple horizons, or adding scheduled refresh and data-quality tests between layers.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="name">Tejas Naik</span>
+    <div class="links">
+      <a href="index.html">Portfolio</a>
+      <a href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:tejasnaik137@gmail.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

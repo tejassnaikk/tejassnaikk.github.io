@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MarketStream — Case Study · Tejas Naik</title>
+<meta name="description" content="MarketStream case study: a real-time crypto signal pipeline on AWS EC2 — Kafka, DuckDB, LightGBM, observability, and CI/CD. Problem, architecture, decisions, results, and lessons." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #ECEFF3; --surface: #FFFFFF; --surface-2: #F6F8FA;
+    --ink: #111A22; --muted: #5A6671; --faint: #8A95A0;
+    --line: #D6DCE3; --line-soft: #E4E9EE;
+    --accent: #1F4DF0; --accent-ink: #0F2FB0; --accent-soft: rgba(31,77,240,0.08);
+    --live: #18A058; --draft: #B45309; --draft-bg: rgba(217,119,6,0.07);
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --maxw: 880px; --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px; background-position: -1px -1px;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent); display: inline-block; }
+
+  /* nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(236,239,243,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  .back { font-family: var(--mono); font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color .15s; }
+  .back:hover { color: var(--accent); }
+  .nav-right { display: flex; gap: 6px; }
+  .nav-right a { font-family: var(--mono); font-size: 13px; padding: 7px 12px; border-radius: 8px; color: var(--muted); transition: color .15s, background .15s; }
+  .nav-right a:hover { color: var(--ink); background: var(--accent-soft); }
+
+  /* header */
+  header.cs { padding: 60px 0 36px; }
+  header.cs h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem,7vw,3.6rem); letter-spacing: -0.025em; margin: 18px 0 14px; line-height: 1.02; }
+  .lede { font-size: clamp(1.05rem,2.4vw,1.3rem); color: var(--muted); margin: 0 0 28px; }
+  .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .badge.live { color: var(--live); background: rgba(24,160,88,0.10); }
+  .badge .d { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+
+  .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 28px 0 0; }
+  .meta .cell { background: var(--surface); padding: 16px 18px; }
+  .meta .k { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+  .meta .v { font-size: 14px; margin-top: 5px; font-weight: 500; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); transition: transform .12s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-ink); }
+
+  /* sections */
+  section.cs { padding: 30px 0; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.1em; }
+  h2.cs { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem,3.4vw,2rem); letter-spacing: -0.02em; margin: 8px 0 18px; }
+  h3.cs { font-family: var(--display); font-weight: 600; font-size: 1.2rem; margin: 28px 0 10px; letter-spacing: -0.01em; }
+  p.cs { color: #25303A; margin: 0 0 16px; }
+  .cs strong { font-weight: 600; color: var(--ink); }
+
+  /* summary callout */
+  .summary { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 24px 26px; margin: 8px 0 8px; }
+  .summary p { margin: 0; color: #25303A; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 28px; margin: 20px 0 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+  .kpi .n { font-family: var(--display); font-weight: 600; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1; }
+  .kpi .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 7px; }
+
+  /* architecture diagram */
+  .arch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; margin: 8px 0 18px; }
+  .arch .lane-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 12px; }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 0; font-family: var(--mono); font-size: 13px; }
+  .flow .stage { background: var(--surface-2); border: 1px solid var(--line); padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
+  .flow .stage.model { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .flow .arrow { width: 26px; height: 1.5px; background: linear-gradient(90deg,var(--accent),rgba(31,77,240,0.25)); position: relative; flex: none; }
+  .flow .arrow::after { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border-left: 5px solid var(--accent); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+  .cross { margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cross .item { font-family: var(--mono); font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); padding: 9px 12px; border-radius: 8px; }
+  .cross .item b { color: var(--ink); font-weight: 600; }
+  .host-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin: 14px 0 0; text-align: center; }
+
+  /* decision cards */
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; margin: 0 0 14px; }
+  .decision h4 { font-family: var(--display); font-weight: 600; font-size: 1.08rem; margin: 0 0 4px; }
+  .decision .tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.05em; }
+  .decision p { margin: 10px 0 0; color: #25303A; }
+
+  /* lessons list */
+  .lessons { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 14px; }
+  .lessons li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .lessons li b { font-family: var(--display); font-weight: 600; }
+  .lessons li span { display: block; color: var(--muted); margin-top: 4px; }
+
+  /* draft / editor note — DELETE these before publishing */
+  .draft { background: var(--draft-bg); border: 1px dashed var(--draft); border-radius: 10px; padding: 12px 16px; margin: 10px 0 18px; font-family: var(--mono); font-size: 12.5px; color: var(--draft); line-height: 1.55; }
+  .draft b { color: var(--draft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 30px 0; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; align-items: center; }
+  footer .name { font-family: var(--display); font-weight: 600; }
+  footer .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 13px; }
+  footer .links a { color: var(--muted); } footer .links a:hover { color: var(--accent); }
+
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  @media (max-width: 700px) {
+    .meta { grid-template-columns: repeat(2,1fr); }
+    .cross { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="back" href="index.html"><span aria-hidden="true">←</span> Tejas Naik</a>
+    <div class="nav-right">
+      <!-- TODO: link the MarketStream repo -->
+      <a href="#" data-fill="repo">Code ↗</a>
+      <!-- TODO: link the live demo -->
+      <a href="#" data-fill="demo">Live demo ↗</a>
+    </div>
+  </div>
+</header>
+
+<header class="cs">
+  <div class="wrap">
+    <span class="eyebrow">Case study</span>
+    <h1>MarketStream</h1>
+    <p class="lede">A real-time crypto signal pipeline on AWS EC2 — from a live order-book feed through streaming features to a deployed model, wrapped in observability and CI/CD.</p>
+    <span class="badge live"><span class="d" aria-hidden="true"></span>Deployed</span>
+
+    <div class="meta">
+      <div class="cell"><div class="k">Role</div><div class="v">Solo — design &amp; build</div></div>
+      <!-- TODO: set your real timeline -->
+      <div class="cell"><div class="k">Timeline</div><div class="v" data-fill="timeline">8 phases · ~X weeks</div></div>
+      <div class="cell"><div class="k">Type</div><div class="v">Personal project</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">Live on EC2</div></div>
+    </div>
+
+    <div class="cta">
+      <!-- TODO: link the repo -->
+      <a class="btn primary" href="#" data-fill="repo">View code ↗</a>
+      <!-- TODO: link the demo -->
+      <a class="btn" href="#" data-fill="demo">Live demo ↗</a>
+      <a class="btn" href="index.html">← All projects</a>
+    </div>
+  </div>
+</header>
+
+<!-- SUMMARY -->
+<section class="cs">
+  <div class="wrap">
+    <div class="summary">
+      <p>MarketStream ingests a live Binance order-book feed, turns it into streaming features, scores short-horizon price-move direction with a gradient-boosted model, and serves predictions — with full observability, automated drift detection, and CI/CD around the whole thing. It runs end-to-end on a single small EC2 instance, which forced a deliberate set of engineering tradeoffs that are the most interesting part of the project.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="n">0.785</div><div class="l">AUROC · price-direction</div></div>
+        <div class="kpi"><div class="n">Live</div><div class="l">Prometheus + Grafana</div></div>
+        <div class="kpi"><div class="n">Auto</div><div class="l">Drift detect + SNS alerts</div></div>
+        <!-- TODO: add a throughput or latency number once measured -->
+        <div class="kpi"><div class="n" data-fill="throughput">— msg/s</div><div class="l">Ingest throughput</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 01 PROBLEM -->
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">01</span>
+    <h2 class="cs">The problem</h2>
+    <p class="cs">High-frequency order-book data arrives fast, bursty, and noisy. Building a model on it is the easy part; the hard part is everything around the model — ingesting a live feed without dropping messages, computing features in real time, serving predictions, and knowing when the model silently starts to drift. Most student projects stop at a notebook with a good offline score. The goal here was the opposite: a system that actually runs continuously and tells you when it's unhealthy.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add the specific prediction problem in one or two sentences: what exactly the model predicts (e.g. direction of the mid-price over the next N seconds/minutes), the input features (order-book imbalance, spread, depth, etc.), and the baseline you compare against (majority class? naive "no-change"?). This is the first thing an interviewer will ask, so make it precise.
+    </div>
+  </div>
+</section>
+
+<!-- 02 ARCHITECTURE -->
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">02</span>
+    <h2 class="cs">Architecture</h2>
+    <p class="cs">The data path is a straight line; the interesting parts are the cross-cutting concerns that make it production-grade. Everything below runs on one EC2 instance.</p>
+
+    <div class="arch">
+      <p class="lane-label">Data path</p>
+      <div class="flow" aria-label="MarketStream data path">
+        <span class="stage">Binance WS</span><span class="arrow"></span>
+        <span class="stage">Kafka</span><span class="arrow"></span>
+        <span class="stage">DuckDB · features</span><span class="arrow"></span>
+        <span class="stage model">LightGBM</span><span class="arrow"></span>
+        <span class="stage">FastAPI</span><span class="arrow"></span>
+        <span class="stage">Streamlit</span>
+      </div>
+
+      <div class="cross">
+        <div class="item"><b>Observability</b> — Prometheus scrapes metrics, Grafana dashboards</div>
+        <div class="item"><b>Alerting</b> — drift detection → AWS SNS notifications</div>
+        <div class="item"><b>Tracking</b> — MLflow (SQLite backend) for model runs</div>
+        <div class="item"><b>CI/CD</b> — GitHub Actions for build, test, retrain</div>
+      </div>
+      <p class="host-note">▸ all of the above hosted on a single AWS EC2 instance (t3.small) + S3</p>
+    </div>
+
+    <p class="cs">Kafka decouples ingestion from processing: the WebSocket consumer can keep up with bursts while downstream feature computation reads at its own pace. DuckDB computes streaming features in-process. LightGBM scores them, FastAPI serves the prediction, and Streamlit visualizes it. Prometheus/Grafana watch the system, a drift check fires SNS alerts when inputs shift, and GitHub Actions automates the retrain-and-deploy loop.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      If you have an architecture image (even hand-drawn or from draw.io), drop it in here — reviewers love a single diagram. Also worth one line on how features are windowed (you used time-bucketed aggregations) and how often the model retrains.
+    </div>
+  </div>
+</section>
+
+<!-- 03 DECISIONS -->
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">03</span>
+    <h2 class="cs">Key decisions &amp; tradeoffs</h2>
+    <p class="cs">These are the choices that show engineering judgment — each one is a place where the obvious tool wasn't the right one.</p>
+
+    <div class="decision">
+      <span class="tag">Streaming engine</span>
+      <h4>DuckDB instead of Spark</h4>
+      <p>The original design used Spark Structured Streaming. On a <strong>t3.small</strong>, Spark ran out of memory — the JVM overhead and shuffle machinery simply don't fit a 2 GB instance. Rather than scale the instance up (and the bill with it), I moved feature computation to <strong>DuckDB</strong>, which runs in-process with a tiny footprint. The tradeoff is explicit: I gave up horizontal scalability I wasn't using for a single-node engine that fits the hardware. For this data volume, distributed compute was overhead, not capability.</p>
+    </div>
+
+    <div class="decision">
+      <span class="tag">Ingestion</span>
+      <h4>Kafka as a buffer, not as scale theater</h4>
+      <p>Order-book updates are bursty. Kafka sits between the WebSocket consumer and feature computation so a burst doesn't back-pressure or drop data — the consumer writes at line rate and the processor drains at its own pace. It's a single-broker setup; the point is decoupling and durability, not a giant cluster.</p>
+    </div>
+
+    <div class="decision">
+      <span class="tag">Model</span>
+      <h4>LightGBM over a deep net</h4>
+      <p>The features are tabular microstructure signals — order-book imbalance, spread, depth. Gradient-boosted trees are the right fit: fast to train, fast to score, strong on tabular data, and cheap enough to retrain on the instance. A neural net would add latency and training cost for no clear gain here.</p>
+      <div class="draft" style="margin-top:14px">
+        <b>Editor note.</b> Add the comparison if you ran one — did you try logistic regression or an MLP first? Even "LightGBM beat logistic-regression baseline by X AUROC" makes this concrete.
+      </div>
+    </div>
+
+    <div class="decision">
+      <span class="tag">Operations</span>
+      <h4>Observability and drift detection built in from the start</h4>
+      <p>A streaming model that silently degrades is worse than no model. Prometheus + Grafana expose system and model metrics, and a drift check compares live feature distributions against training and fires an <strong>AWS SNS</strong> alert when they diverge. This is the difference between a demo and something you'd trust running unattended.</p>
+    </div>
+
+    <div class="decision">
+      <span class="tag">Delivery</span>
+      <h4>GitHub Actions for CI/CD</h4>
+      <p>Build, test, and the retrain/deploy path are automated through GitHub Actions so a change goes from commit to running on EC2 without manual steps — and so the pipeline is reproducible rather than a hand-configured box.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 RESULTS -->
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">04</span>
+    <h2 class="cs">Results</h2>
+    <p class="cs">What the system actually does, today:</p>
+    <ul class="lessons">
+      <li><b>0.785 AUROC</b><span>On short-horizon price-direction. <em>Add: the horizon, the test split, and the baseline this beats.</em></span></li>
+      <li><b>Runs continuously on one t3.small</b><span>End-to-end ingest → features → score → serve, within a 2 GB footprint.</span></li>
+      <li><b>Live observability</b><span>Prometheus + Grafana dashboards for system and model health.</span></li>
+      <li><b>Automated drift alerts</b><span>Feature-distribution drift triggers AWS SNS notifications.</span></li>
+      <li><b>Automated retrain/deploy</b><span>GitHub Actions pipeline from commit to deployment.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add 1–2 hard numbers if you can measure them: ingest throughput (messages/sec), end-to-end prediction latency, and the model baseline comparison. Even rough numbers turn "it works" into "it works, and here's the proof."
+    </div>
+  </div>
+</section>
+
+<!-- 05 LESSONS -->
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">05</span>
+    <h2 class="cs">What broke, and what I'd do differently</h2>
+    <p class="cs">The parts that didn't go to plan are the parts I learned the most from.</p>
+    <ul class="lessons">
+      <li><b>Spark OOM on a small box</b><span>The migration to DuckDB was driven by a real failure, not a preference. Lesson: match the tool to the hardware and the data volume, not to the résumé.</span></li>
+      <li><b>Crossed-book artifacts</b><span>Raw order-book snapshots occasionally showed a bid above the ask — invalid states that had to be filtered before feature computation, or they'd poison the model. Data quality before modeling.</span></li>
+      <li><b>Config gotchas</b><span>SPARK_LOCAL_IP binding and case-sensitive Spark SQL cost real debugging time — the unglamorous reality of running streaming infra.</span></li>
+      <li><b>EC2 disk and environment hygiene</b><span>Ran into disk pressure and venv/Anaconda conflicts on the instance; learned to keep the runtime environment clean and provisioned deliberately.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add one honest "what I'd do differently" — e.g. how you'd handle multi-symbol scaling, or whether you'd swap SQLite-backed MLflow for something sturdier. Reviewers remember candidates who can critique their own work.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="name">Tejas Naik</span>
+    <div class="links">
+      <a href="index.html">Portfolio</a>
+      <a href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:tejasnaik137@gmail.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

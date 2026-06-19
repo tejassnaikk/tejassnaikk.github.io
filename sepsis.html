@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SepsisSentinel — Case Study · Tejas Naik</title>
+<meta name="description" content="SepsisSentinel case study: real-time ICU sepsis-risk prediction on MIMIC-IV with a streaming pipeline, XGBoost, and a RAG layer, deployed on Railway." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #ECEFF3; --surface: #FFFFFF; --surface-2: #F6F8FA;
+    --ink: #111A22; --muted: #5A6671; --faint: #8A95A0;
+    --line: #D6DCE3; --line-soft: #E4E9EE;
+    --accent: #1F4DF0; --accent-ink: #0F2FB0; --accent-soft: rgba(31,77,240,0.08);
+    --live: #18A058; --draft: #B45309; --draft-bg: rgba(217,119,6,0.07);
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --maxw: 880px; --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px; background-position: -1px -1px;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent); display: inline-block; }
+
+  /* nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(236,239,243,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  .back { font-family: var(--mono); font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color .15s; }
+  .back:hover { color: var(--accent); }
+  .nav-right { display: flex; gap: 6px; }
+  .nav-right a { font-family: var(--mono); font-size: 13px; padding: 7px 12px; border-radius: 8px; color: var(--muted); transition: color .15s, background .15s; }
+  .nav-right a:hover { color: var(--ink); background: var(--accent-soft); }
+
+  /* header */
+  header.cs { padding: 60px 0 36px; }
+  header.cs h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem,7vw,3.6rem); letter-spacing: -0.025em; margin: 18px 0 14px; line-height: 1.02; }
+  .lede { font-size: clamp(1.05rem,2.4vw,1.3rem); color: var(--muted); margin: 0 0 28px; }
+  .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .badge.live { color: var(--live); background: rgba(24,160,88,0.10); }
+  .badge.wip { color: var(--draft); background: rgba(217,119,6,0.10); }
+  .badge .d { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+
+  .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 28px 0 0; }
+  .meta .cell { background: var(--surface); padding: 16px 18px; }
+  .meta .k { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+  .meta .v { font-size: 14px; margin-top: 5px; font-weight: 500; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); transition: transform .12s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-ink); }
+
+  /* sections */
+  section.cs { padding: 30px 0; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.1em; }
+  h2.cs { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem,3.4vw,2rem); letter-spacing: -0.02em; margin: 8px 0 18px; }
+  h3.cs { font-family: var(--display); font-weight: 600; font-size: 1.2rem; margin: 28px 0 10px; letter-spacing: -0.01em; }
+  p.cs { color: #25303A; margin: 0 0 16px; }
+  .cs strong { font-weight: 600; color: var(--ink); }
+
+  /* summary callout */
+  .summary { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 24px 26px; margin: 8px 0 8px; }
+  .summary p { margin: 0; color: #25303A; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 28px; margin: 20px 0 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+  .kpi .n { font-family: var(--display); font-weight: 600; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1; }
+  .kpi .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 7px; }
+
+  /* architecture diagram */
+  .arch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; margin: 8px 0 18px; }
+  .arch .lane-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 12px; }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 0; font-family: var(--mono); font-size: 13px; }
+  .flow .stage { background: var(--surface-2); border: 1px solid var(--line); padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
+  .flow .stage.model { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .flow .arrow { width: 26px; height: 1.5px; background: linear-gradient(90deg,var(--accent),rgba(31,77,240,0.25)); position: relative; flex: none; }
+  .flow .arrow::after { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border-left: 5px solid var(--accent); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+  .cross { margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cross .item { font-family: var(--mono); font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); padding: 9px 12px; border-radius: 8px; }
+  .cross .item b { color: var(--ink); font-weight: 600; }
+  .host-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin: 14px 0 0; text-align: center; }
+
+  /* decision cards */
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; margin: 0 0 14px; }
+  .decision h4 { font-family: var(--display); font-weight: 600; font-size: 1.08rem; margin: 0 0 4px; }
+  .decision .tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.05em; }
+  .decision p { margin: 10px 0 0; color: #25303A; }
+
+  /* lessons list */
+  .lessons { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 14px; }
+  .lessons li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .lessons li b { font-family: var(--display); font-weight: 600; }
+  .lessons li span { display: block; color: var(--muted); margin-top: 4px; }
+
+  /* draft / editor note — DELETE these before publishing */
+  .draft { background: var(--draft-bg); border: 1px dashed var(--draft); border-radius: 10px; padding: 12px 16px; margin: 10px 0 18px; font-family: var(--mono); font-size: 12.5px; color: var(--draft); line-height: 1.55; }
+  .draft b { color: var(--draft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 30px 0; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; align-items: center; }
+  footer .name { font-family: var(--display); font-weight: 600; }
+  footer .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 13px; }
+  footer .links a { color: var(--muted); } footer .links a:hover { color: var(--accent); }
+
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  @media (max-width: 700px) {
+    .meta { grid-template-columns: repeat(2,1fr); }
+    .cross { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="back" href="index.html"><span aria-hidden="true">←</span> Tejas Naik</a>
+    <div class="nav-right">
+      <a href="#" data-fill="repo">Code ↗</a>
+      <a href="#" data-fill="demo">Live demo ↗</a>
+    </div>
+  </div>
+</header>
+
+<header class="cs">
+  <div class="wrap">
+    <span class="eyebrow">Case study</span>
+    <h1>SepsisSentinel</h1>
+    <p class="lede">Real-time ICU sepsis-risk prediction on MIMIC-IV — a streaming pipeline that windows patient vitals, engineers temporal features, scores risk, and serves it, with a retrieval layer for clinical context.</p>
+    <span class="badge live"><span class="d" aria-hidden="true"></span>Deployed</span>
+
+    <div class="meta">
+      <div class="cell"><div class="k">Role</div><div class="v">Solo — design & build</div></div>
+      <div class="cell"><div class="k">Timeline</div><div class="v" data-fill="timeline">6 weeks</div></div>
+      <div class="cell"><div class="k">Type</div><div class="v">Personal · research data</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">Live on Railway</div></div>
+    </div>
+
+    <div class="cta">
+      <a class="btn primary" href="#" data-fill="repo">View code ↗</a>
+      <a class="btn" href="#" data-fill="demo">Live demo ↗</a>
+      <a class="btn" href="index.html">← All projects</a>
+    </div>
+  </div>
+</header>
+
+<section class="cs">
+  <div class="wrap">
+    <div class="summary">
+      <p>SepsisSentinel turns MIMIC-IV ICU data into a continuous sepsis-risk signal: it streams patient vitals through Kafka, lands them in Delta Lake, aggregates time-windowed features, scores them with XGBoost, and serves predictions via FastAPI on Railway — with a RAG layer that retrieves relevant clinical context. The data is large and imbalanced (~935K windows, ~25% sepsis), which shaped most of the engineering. It's a research prototype on a public research dataset, not a clinical tool.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="n">0.810</div><div class="l">Test AUROC · held-out patients</div></div>
+        <div class="kpi"><div class="n">935K</div><div class="l">Prediction windows</div></div>
+        <div class="kpi"><div class="n">63</div><div class="l">Engineered features</div></div>
+        <div class="kpi"><div class="n">~25%</div><div class="l">Sepsis prevalence</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">01</span>
+    <h2 class="cs">The problem</h2>
+    <p class="cs">ICU sepsis is time-critical — earlier warning saves lives. The modeling is the easy part; the hard part is building a streaming system over messy clinical time-series without leaking future information, handling a heavily imbalanced label, and serving continuously. Most takes on this are a single notebook with one offline number; the goal here was a running pipeline that scores patients in motion.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add the precise clinical framing: what the model predicts and over what lead time (e.g. sepsis onset within the next N hours), the window length over which vitals are aggregated, and which vitals/labs are inputs. Note clearly that this uses credentialed MIMIC-IV research data and is not a validated medical device.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">02</span>
+    <h2 class="cs">Architecture</h2>
+    <p class="cs">Vitals stream in, land in a lakehouse, get aggregated into time windows, get scored, and a retrieval layer adds clinical context to each prediction.</p>
+    <div class="arch">
+      <p class="lane-label">Data path</p>
+      <div class="flow" aria-label="SepsisSentinel data path">
+        <span class="stage">MIMIC-IV</span><span class="arrow"></span><span class="stage">Kafka</span><span class="arrow"></span><span class="stage">Delta Lake · Bronze</span><span class="arrow"></span><span class="stage">DuckDB · Silver/Gold</span><span class="arrow"></span><span class="stage model">XGBoost</span><span class="arrow"></span><span class="stage">FastAPI · Railway</span>
+      </div>
+      <div class="cross">
+        <div class="item"><b>RAG</b> — sentence-transformers + cosine retrieval for clinical context</div>
+        <div class="item"><b>Lakehouse</b> — Delta Lake Bronze, dbt-style Silver/Gold marts</div>
+        <div class="item"><b>Imbalance</b> — ~25% positive class shaped sampling & metrics</div>
+        <div class="item"><b>Serving</b> — FastAPI deployed on Railway</div>
+      </div>
+      <p class="host-note">▸ trained on MIMIC-IV; served live on Railway</p>
+    </div>
+    <p class="cs">Kafka streams vitals so ingestion is decoupled from processing. Raw data lands as Bronze in Delta Lake; Silver/Gold aggregations build the windowed feature table. XGBoost scores each window, FastAPI serves the risk, and a RAG layer retrieves relevant clinical reference text alongside the score so it isn't a bare number.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add the windowing detail (window length and stride) and how often the model retrains, plus the row counts that flow Bronze → Gold.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">03</span>
+    <h2 class="cs">Key decisions &amp; tradeoffs</h2>
+    <p class="cs">The choices that show judgment — where the obvious approach wasn't the right one for clinical time-series.</p>
+    <div class="decision">
+      <span class="tag">Compute</span>
+      <h4>DuckDB for Silver/Gold, not PySpark</h4>
+      <p>The Silver/Gold aggregation originally ran on PySpark and ran out of memory building the ~935K-window Gold table. Moving the aggregations to in-process DuckDB fixed it within the same footprint. Same lesson that keeps recurring: when the data fits one node, distributed compute is overhead, not capability.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Features</span>
+      <h4>Temporal lag & delta features</h4>
+      <p>A single snapshot of vitals misses the trend, and in sepsis the trajectory is the signal. Adding lag and delta features (63 total) — how each vital is changing, not just its current value — pushed test AUROC from 0.806 to 0.810.</p>
+      <div class="draft" style="margin-top:14px"><b>Editor note.</b> Add the baseline this beats (e.g. a vitals-only model or a clinical score like SOFA/qSOFA) to make the number land.</div>
+    </div>
+    <div class="decision">
+      <span class="tag">Evaluation</span>
+      <h4>Patient-level split + subgroup analysis</h4>
+      <p>The split is by patient, not by row — otherwise windows from the same stay leak across train/test and quietly inflate AUROC. I also ran subgroup analysis across cohorts to check the model holds rather than reporting a single headline number, which matters before anyone trusts a clinical model.</p>
+      <div class="draft" style="margin-top:14px"><b>Editor note.</b> Confirm the split is strictly patient-level and name the subgroups you checked.</div>
+    </div>
+    <div class="decision">
+      <span class="tag">Model</span>
+      <h4>XGBoost for tabular clinical signals</h4>
+      <p>Clinical features are heterogeneous and missingness-prone; gradient-boosted trees handle that well, train fast, and give feature importances that a clinician can sanity-check. A deep net would add cost and opacity for no clear gain on this tabular data.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Context</span>
+      <h4>A RAG layer for grounding</h4>
+      <p>A risk score on its own is hard to act on. A retrieval layer (sentence-transformers embeddings, cosine similarity) surfaces relevant clinical reference text next to each prediction, turning a number into something a reviewer can reason about.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">04</span>
+    <h2 class="cs">Results</h2>
+    <p class="cs">What the system does today:</p>
+    <ul class="lessons">
+      <li><b>0.810 AUROC</b><span>On held-out patients. Add the lead-time framing and the baseline it beats.</span></li>
+      <li><b>935K windows scored, ~25% positive</b><span>A large, realistically imbalanced evaluation set.</span></li>
+      <li><b>63 engineered features</b><span>Including temporal lag/delta features that drove the gain.</span></li>
+      <li><b>Subgroup analysis</b><span>Checked performance holds across cohorts, not just in aggregate.</span></li>
+      <li><b>Live on Railway</b><span>FastAPI service with a RAG context layer.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add a calibration note if you have one (a clinical model's probabilities need to be trustworthy, not just rank-ordered) and the model baseline comparison.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">05</span>
+    <h2 class="cs">What broke, and what I'd do differently</h2>
+    <p class="cs">The parts that fought back taught the most.</p>
+    <ul class="lessons">
+      <li><b>PySpark OOM on Silver/Gold</b><span>Drove the move to DuckDB — a real failure, not a preference.</span></li>
+      <li><b>Class imbalance</b><span>~25% prevalence meant accuracy was useless; AUROC and threshold choice mattered far more.</span></li>
+      <li><b>Leakage is silent</b><span>Patient-level splitting was essential; row-level splitting would have produced a flattering, dishonest number.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Add one honest 'what I'd do differently' — e.g. prospective/temporal validation, probability calibration, or external validation on a second dataset.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="name">Tejas Naik</span>
+    <div class="links">
+      <a href="index.html">Portfolio</a>
+      <a href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:tejasnaik137@gmail.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

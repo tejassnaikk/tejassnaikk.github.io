@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GridMind — Case Study · Tejas Naik</title>
+<meta name="description" content="GridMind case study: a compliance-grade RAG system for energy reliability standards — event-driven AWS ingestion, hybrid retrieval, and obligation-aware ranking." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --canvas: #ECEFF3; --surface: #FFFFFF; --surface-2: #F6F8FA;
+    --ink: #111A22; --muted: #5A6671; --faint: #8A95A0;
+    --line: #D6DCE3; --line-soft: #E4E9EE;
+    --accent: #1F4DF0; --accent-ink: #0F2FB0; --accent-soft: rgba(31,77,240,0.08);
+    --live: #18A058; --draft: #B45309; --draft-bg: rgba(217,119,6,0.07);
+    --display: "Space Grotesk", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --maxw: 880px; --r: 14px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--canvas); color: var(--ink);
+    font-family: var(--body); font-size: 16px; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      linear-gradient(var(--line-soft) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+    background-size: 56px 56px; background-position: -1px -1px;
+  }
+  a { color: inherit; text-decoration: none; }
+  .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .eyebrow::before { content: ""; width: 22px; height: 1px; background: var(--accent); display: inline-block; }
+
+  /* nav */
+  .nav { position: sticky; top: 0; z-index: 50; background: rgba(236,239,243,0.82); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  .back { font-family: var(--mono); font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 8px; transition: color .15s; }
+  .back:hover { color: var(--accent); }
+  .nav-right { display: flex; gap: 6px; }
+  .nav-right a { font-family: var(--mono); font-size: 13px; padding: 7px 12px; border-radius: 8px; color: var(--muted); transition: color .15s, background .15s; }
+  .nav-right a:hover { color: var(--ink); background: var(--accent-soft); }
+
+  /* header */
+  header.cs { padding: 60px 0 36px; }
+  header.cs h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2.4rem,7vw,3.6rem); letter-spacing: -0.025em; margin: 18px 0 14px; line-height: 1.02; }
+  .lede { font-size: clamp(1.05rem,2.4vw,1.3rem); color: var(--muted); margin: 0 0 28px; }
+  .badge { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px; }
+  .badge.live { color: var(--live); background: rgba(24,160,88,0.10); }
+  .badge.wip { color: var(--draft); background: rgba(217,119,6,0.10); }
+  .badge .d { width: 7px; height: 7px; border-radius: 50%; background: var(--live); }
+
+  .meta { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; margin: 28px 0 0; }
+  .meta .cell { background: var(--surface); padding: 16px 18px; }
+  .meta .k { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--faint); }
+  .meta .v { font-size: 14px; margin-top: 5px; font-weight: 500; }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0 0; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 14px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); transition: transform .12s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-ink); }
+
+  /* sections */
+  section.cs { padding: 30px 0; }
+  .sec-num { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; letter-spacing: 0.1em; }
+  h2.cs { font-family: var(--display); font-weight: 600; font-size: clamp(1.5rem,3.4vw,2rem); letter-spacing: -0.02em; margin: 8px 0 18px; }
+  h3.cs { font-family: var(--display); font-weight: 600; font-size: 1.2rem; margin: 28px 0 10px; letter-spacing: -0.01em; }
+  p.cs { color: #25303A; margin: 0 0 16px; }
+  .cs strong { font-weight: 600; color: var(--ink); }
+
+  /* summary callout */
+  .summary { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: var(--r); padding: 24px 26px; margin: 8px 0 8px; }
+  .summary p { margin: 0; color: #25303A; }
+  .kpis { display: flex; flex-wrap: wrap; gap: 28px; margin: 20px 0 0; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+  .kpi .n { font-family: var(--display); font-weight: 600; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1; }
+  .kpi .l { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-top: 7px; }
+
+  /* architecture diagram */
+  .arch { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 26px; margin: 8px 0 18px; }
+  .arch .lane-label { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--faint); margin: 0 0 12px; }
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 0; font-family: var(--mono); font-size: 13px; }
+  .flow .stage { background: var(--surface-2); border: 1px solid var(--line); padding: 9px 13px; border-radius: 8px; white-space: nowrap; }
+  .flow .stage.model { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+  .flow .arrow { width: 26px; height: 1.5px; background: linear-gradient(90deg,var(--accent),rgba(31,77,240,0.25)); position: relative; flex: none; }
+  .flow .arrow::after { content: ""; position: absolute; right: 0; top: 50%; transform: translateY(-50%); border-left: 5px solid var(--accent); border-top: 3.5px solid transparent; border-bottom: 3.5px solid transparent; }
+  .cross { margin-top: 22px; padding-top: 20px; border-top: 1px dashed var(--line); display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .cross .item { font-family: var(--mono); font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); padding: 9px 12px; border-radius: 8px; }
+  .cross .item b { color: var(--ink); font-weight: 600; }
+  .host-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin: 14px 0 0; text-align: center; }
+
+  /* decision cards */
+  .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; margin: 0 0 14px; }
+  .decision h4 { font-family: var(--display); font-weight: 600; font-size: 1.08rem; margin: 0 0 4px; }
+  .decision .tag { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: 0.05em; }
+  .decision p { margin: 10px 0 0; color: #25303A; }
+
+  /* lessons list */
+  .lessons { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 14px; }
+  .lessons li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .lessons li b { font-family: var(--display); font-weight: 600; }
+  .lessons li span { display: block; color: var(--muted); margin-top: 4px; }
+
+  /* draft / editor note — DELETE these before publishing */
+  .draft { background: var(--draft-bg); border: 1px dashed var(--draft); border-radius: 10px; padding: 12px 16px; margin: 10px 0 18px; font-family: var(--mono); font-size: 12.5px; color: var(--draft); line-height: 1.55; }
+  .draft b { color: var(--draft); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 40px; padding: 30px 0; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; align-items: center; }
+  footer .name { font-family: var(--display); font-weight: 600; }
+  footer .links { display: flex; gap: 14px; font-family: var(--mono); font-size: 13px; }
+  footer .links a { color: var(--muted); } footer .links a:hover { color: var(--accent); }
+
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  @media (max-width: 700px) {
+    .meta { grid-template-columns: repeat(2,1fr); }
+    .cross { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="back" href="index.html"><span aria-hidden="true">←</span> Tejas Naik</a>
+    <div class="nav-right">
+      <a href="#" data-fill="repo">Code ↗</a>
+    </div>
+  </div>
+</header>
+
+<header class="cs">
+  <div class="wrap">
+    <span class="eyebrow">Case study</span>
+    <h1>GridMind</h1>
+    <p class="lede">A compliance-grade retrieval system for NERC and FERC energy standards — event-driven AWS ingestion, hybrid semantic + keyword retrieval, and answers tagged by how binding each requirement is.</p>
+    <span class="badge wip">In progress</span>
+
+    <div class="meta">
+      <div class="cell"><div class="k">Role</div><div class="v">Solo — design & build</div></div>
+      <div class="cell"><div class="k">Timeline</div><div class="v" data-fill="timeline">8-week plan</div></div>
+      <div class="cell"><div class="k">Type</div><div class="v">Personal project</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">In active build</div></div>
+    </div>
+
+    <div class="cta">
+      <a class="btn primary" href="#" data-fill="repo">View code ↗</a>
+      <a class="btn" href="index.html">← All projects</a>
+    </div>
+  </div>
+</header>
+
+<section class="cs">
+  <div class="wrap">
+    <div class="summary">
+      <p>GridMind answers plain-English compliance questions over NERC reliability standards, FERC orders, and NREL reports — returning cited, version-aware results with each requirement tagged shall / should / may. A two-pipeline AWS architecture ingests and indexes documents idempotently; a hybrid retriever ranks by semantics, keywords, freshness, and obligation strength. It's in active development, so the benchmark numbers below are targets until measured.</p>
+      <div class="kpis">
+        <div class="kpi"><div class="n">4 signals</div><div class="l">Hybrid retrieval score</div></div>
+        <div class="kpi"><div class="n">shall·should·may</div><div class="l">Obligation classifier</div></div>
+        <div class="kpi"><div class="n" data-fill="gridmind-bench">Recall@5 · MRR</div><div class="l">4-strategy benchmark</div></div>
+        <div class="kpi"><div class="n">pgvector</div><div class="l">Aurora vector store</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">01</span>
+    <h2 class="cs">The problem</h2>
+    <p class="cs">A compliance engineer asked to demonstrate conformance with one NERC requirement often has to open several 30–60 page standards, cross-reference them, check which revision is current, and judge whether each clause is mandatory ('shall') or advisory ('should') — today done with Ctrl-F over PDFs. Generic RAG makes it worse: it hallucinates citations, ignores document versions, and treats binding and advisory language identically. GridMind targets exactly that gap.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      If you can, add one concrete before/after: how long the manual cross-referencing takes versus a GridMind query. The pain is the pitch.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">02</span>
+    <h2 class="cs">Architecture</h2>
+    <p class="cs">An offline indexer builds the corpus; an event-driven online pipeline ingests it idempotently; a hybrid retriever serves it. The data path below is the indexing-and-serving spine.</p>
+    <div class="arch">
+      <p class="lane-label">Data path</p>
+      <div class="flow" aria-label="GridMind data path">
+        <span class="stage">NERC / FERC docs</span><span class="arrow"></span><span class="stage">Section-aware chunker</span><span class="arrow"></span><span class="stage">DistilBERT · obligation tag</span><span class="arrow"></span><span class="stage">Embed · MiniLM</span><span class="arrow"></span><span class="stage">Aurora · pgvector</span><span class="arrow"></span><span class="stage model">Hybrid retrieval</span><span class="arrow"></span><span class="stage">FastAPI / Streamlit</span>
+      </div>
+      <div class="cross">
+        <div class="item"><b>State bridge</b> — DynamoDB checksums skip unchanged revisions (idempotent re-ingest)</div>
+        <div class="item"><b>Orchestration</b> — Step Functions DistributedMap fans out ~40 Lambdas</div>
+        <div class="item"><b>Hybrid index</b> — pgvector HNSW for semantics + tsvector GIN for keywords</div>
+        <div class="item"><b>Cross-refs</b> — NetworkX citation graph expands related standards</div>
+      </div>
+      <p class="host-note">▸ AWS serverless throughout (Lambda, Step Functions, Aurora) — designed to run under ~$5/month</p>
+    </div>
+    <p class="cs">A monthly offline indexer scrapes standards, chunks them along requirement boundaries, tags each chunk's obligation strength, embeds it, and publishes a bundle to S3. An S3 event triggers the online Step Functions pipeline, which unpacks, checksums against DynamoDB to skip unchanged revisions, and upserts chunks into Aurora with pgvector. At query time a hybrid retriever scores candidates 60% semantic + 25% keyword + 10% freshness + 5% obligation, then expands across the citation graph.</p>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      A single architecture diagram of the two pipelines + the DynamoDB bridge would carry this section — you already have one in the project plan; drop the image in here.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">03</span>
+    <h2 class="cs">Key decisions &amp; tradeoffs</h2>
+    <p class="cs">The design choices that make this more than a PDF chatbot.</p>
+    <div class="decision">
+      <span class="tag">Ingestion</span>
+      <h4>Two pipelines + a DynamoDB checksum bridge</h4>
+      <p>An offline indexer and an online ingestion pipeline share a DynamoDB state table keyed by standard and version. Unchanged revisions are skipped by checksum, so the monthly run doesn't re-embed the entire corpus. The ingestion is idempotent by construction — re-running is safe.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Chunking</span>
+      <h4>Section-aware, not token-count</h4>
+      <p>NERC standards are structured as Requirements (R1, R2.3, …). The chunker respects those boundaries so a chunk never splits mid-requirement. Retrieval then returns coherent obligations instead of fragments that lose their meaning at the cut point.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Ranking</span>
+      <h4>Obligation-aware hybrid scoring</h4>
+      <p>The retrieval contribution that separates this from generic RAG: each chunk is tagged shall / should / may / informational by a fine-tuned DistilBERT, and a binding 'shall' outranks a semantically similar 'may'. Mandatory beats advisory, folded into one score alongside semantic, keyword, and freshness signals.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Retrieval</span>
+      <h4>Cross-reference graph expansion</h4>
+      <p>Standards cite each other (CIP-013 points at CIP-005). A NetworkX citation graph lets a result expand to the standards it references, so a single question surfaces both the clause asked about and the definitions it depends on.</p>
+    </div>
+    <div class="decision">
+      <span class="tag">Versioning</span>
+      <h4>Version-aware retrieval</h4>
+      <p>Each document carries its effective date and whether it's been superseded. The retriever prefers the current revision, so you don't get a confident answer drawn from a retired version of a standard.</p>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">04</span>
+    <h2 class="cs">Results</h2>
+    <p class="cs">Where the build stands (numbers are targets until measured):</p>
+    <ul class="lessons">
+      <li><b>Two-pipeline serverless architecture</b><span>Offline indexer + event-driven online ingestion with idempotent DynamoDB bridge.</span></li>
+      <li><b>Hybrid retriever, four signals</b><span>Semantic + keyword + freshness + obligation in one score.</span></li>
+      <li><b>DistilBERT obligation classifier</b><span>Four classes — add the measured F1 once trained.</span></li>
+      <li><b>4-strategy retrieval benchmark</b><span>BM25 vs dense vs hybrid vs hybrid+cross-ref — add measured Recall@5 / MRR.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      This is the project's headline deliverable for a DS interview, and it's unmeasured. As you complete Week 6, fill in the real Recall@5 / MRR table and the classifier F1 — those numbers are what get the project remembered.
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">05</span>
+    <h2 class="cs">What broke, and what I'd do differently</h2>
+    <p class="cs">Captured as the build progresses.</p>
+    <ul class="lessons">
+      <li><b>Idempotency is a design property, not an afterthought</b><span>The checksum bridge was worth building first — it makes every later re-run cheap and safe.</span></li>
+    </ul>
+    <div class="draft">
+      <b>Editor note — delete before publishing.</b><br>
+      Fill this in as you go — chunking edge cases, obligation-label noise, version-metadata gaps, and any retrieval failures you had to debug. These notes are the most interview-valuable part once the project is done.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span class="name">Tejas Naik</span>
+    <div class="links">
+      <a href="index.html">Portfolio</a>
+      <a href="https://github.com/tejassnaikk" target="_blank" rel="noopener">GitHub</a>
+      <a href="mailto:tejasnaik137@gmail.com">Email</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
