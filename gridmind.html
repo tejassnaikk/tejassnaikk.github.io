@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>GridMind — Case Study · Tejas Naik</title>
-<meta name="description" content="GridMind case study: a compliance-grade RAG system for energy reliability standards — event-driven AWS ingestion, hybrid retrieval, and obligation-aware ranking." />
+<meta name="description" content="GridMind case study: a retrieval system for NERC CIP cybersecurity compliance documents, with a pre-registered A/B experiment measuring whether an obligation classification signal improves downstream ranking." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111A22'/%3E%3Cpath d='M8 11h16M11 11v13' stroke='%231F4DF0' stroke-width='2.6' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='22' r='3' fill='%2318A058'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -135,7 +135,7 @@
   <div class="nav-inner">
     <a class="back" href="index.html"><span aria-hidden="true">←</span> Tejas Naik</a>
     <div class="nav-right">
-      <a href="#" data-fill="repo">Code ↗</a>
+      <a href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">Code ↗</a>
     </div>
   </div>
 </header>
@@ -144,18 +144,15 @@
   <div class="wrap">
     <span class="eyebrow">Case study</span>
     <h1>GridMind</h1>
-    <p class="lede">A compliance-grade retrieval system for NERC and FERC energy standards — event-driven AWS ingestion, hybrid semantic + keyword retrieval, and answers tagged by how binding each requirement is.</p>
-    <span class="badge wip">In progress</span>
-
+    <p class="lede">A retrieval system for NERC CIP cybersecurity compliance documents, built around a pre-registered A/B experiment measuring whether an obligation classification signal improves downstream ranking.</p>
     <div class="meta">
-      <div class="cell"><div class="k">Role</div><div class="v">Solo — design & build</div></div>
-      <div class="cell"><div class="k">Timeline</div><div class="v" data-fill="timeline">8-week plan</div></div>
+      <div class="cell"><div class="k">Role</div><div class="v">Solo — design, build, evaluation</div></div>
+      <div class="cell"><div class="k">Corpus</div><div class="v">96 chunks · 3 NERC CIP standards</div></div>
       <div class="cell"><div class="k">Type</div><div class="v">Personal project</div></div>
-      <div class="cell"><div class="k">Status</div><div class="v">In active build</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">Research prototype, eval expansion planned</div></div>
     </div>
-
     <div class="cta">
-      <a class="btn primary" href="#" data-fill="repo">View code ↗</a>
+      <a class="btn primary" href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">View code ↗</a>
       <a class="btn" href="index.html">← All projects</a>
     </div>
   </div>
@@ -164,12 +161,12 @@
 <section class="cs">
   <div class="wrap">
     <div class="summary">
-      <p>GridMind answers plain-English compliance questions over NERC reliability standards, FERC orders, and NREL reports — returning cited, version-aware results with each requirement tagged shall / should / may. A two-pipeline AWS architecture ingests and indexes documents idempotently; a hybrid retriever ranks by semantics, keywords, freshness, and obligation strength. It's in active development, so the benchmark numbers below are targets until measured.</p>
+      <p>GridMind is a retrieval system for NERC CIP cybersecurity compliance documents. Rather than stop at retrieval or LLM metrics — as most RAG portfolios do — I ran a pre-registered A/B experiment asking whether an obligation classification signal measurably improves downstream ranking. The two-stage architecture assigns obligation labels to corpus chunks, feeds them into multiplicative priors after Reciprocal Rank Fusion, and measures the ranked output by Recall@5 and MRR. The result is small, with transparent analysis of the mismatch between hypothesis and observed mechanism: a +0.038 MRR gain driven by an indirect effect the pre-registration did not predict. Full technical writeup on <a href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">GitHub</a>, including reproducibility contracts (LogReg OOF F1=0.913, baseline rrf+priors R@5=0.750 consistent across runs under fixed seeds).</p>
       <div class="kpis">
-        <div class="kpi"><div class="n">4 signals</div><div class="l">Hybrid retrieval score</div></div>
-        <div class="kpi"><div class="n">shall·should·may</div><div class="l">Obligation classifier</div></div>
-        <div class="kpi"><div class="n" data-fill="gridmind-bench">Recall@5 · MRR</div><div class="l">4-strategy benchmark</div></div>
-        <div class="kpi"><div class="n">pgvector</div><div class="l">Aurora vector store</div></div>
+        <div class="kpi"><div class="n">0.913</div><div class="l">LogReg obligation F1 (5-fold OOF)</div></div>
+        <div class="kpi"><div class="n">0.750</div><div class="l">Baseline Recall@5</div></div>
+        <div class="kpi"><div class="n">+0.038</div><div class="l">Classifier-driven ΔMRR</div></div>
+        <div class="kpi"><div class="n">96</div><div class="l">Hand-labelled chunks</div></div>
       </div>
     </div>
   </div>
@@ -180,10 +177,6 @@
     <span class="sec-num">01</span>
     <h2 class="cs">The problem</h2>
     <p class="cs">A compliance engineer asked to demonstrate conformance with one NERC requirement often has to open several 30–60 page standards, cross-reference them, check which revision is current, and judge whether each clause is mandatory ('shall') or advisory ('should') — today done with Ctrl-F over PDFs. Generic RAG makes it worse: it hallucinates citations, ignores document versions, and treats binding and advisory language identically. GridMind targets exactly that gap.</p>
-    <div class="draft">
-      <b>Editor note — delete before publishing.</b><br>
-      If you can, add one concrete before/after: how long the manual cross-referencing takes versus a GridMind query. The pain is the pitch.
-    </div>
   </div>
 </section>
 
@@ -195,21 +188,17 @@
     <div class="arch">
       <p class="lane-label">Data path</p>
       <div class="flow" aria-label="GridMind data path">
-        <span class="stage">NERC / FERC docs</span><span class="arrow"></span><span class="stage">Section-aware chunker</span><span class="arrow"></span><span class="stage">DistilBERT · obligation tag</span><span class="arrow"></span><span class="stage">Embed · MiniLM</span><span class="arrow"></span><span class="stage">Aurora · pgvector</span><span class="arrow"></span><span class="stage model">Hybrid retrieval</span><span class="arrow"></span><span class="stage">FastAPI / Streamlit</span>
+        <span class="stage">NERC CIP PDFs</span><span class="arrow"></span><span class="stage">Requirement-aware chunker</span><span class="arrow"></span><span class="stage">Regex + LogReg obligation tag</span><span class="arrow"></span><span class="stage">bge-small embedding</span><span class="arrow"></span><span class="stage">Postgres · pgvector + FTS</span><span class="arrow"></span><span class="stage model">RRF + priors</span><span class="arrow"></span><span class="stage">FastAPI</span>
       </div>
       <div class="cross">
-        <div class="item"><b>State bridge</b> — DynamoDB checksums skip unchanged revisions (idempotent re-ingest)</div>
-        <div class="item"><b>Orchestration</b> — Step Functions DistributedMap fans out ~40 Lambdas</div>
-        <div class="item"><b>Hybrid index</b> — pgvector HNSW for semantics + tsvector GIN for keywords</div>
-        <div class="item"><b>Cross-refs</b> — NetworkX citation graph expands related standards</div>
+        <div class="item"><b>Hybrid index</b> — pgvector HNSW for semantics, tsvector GIN for keywords, fused by Reciprocal Rank Fusion</div>
+        <div class="item"><b>Obligation priors</b> — multiplicative weights (shall 1.0 → informational 0.80) applied after RRF, not baked into the score</div>
+        <div class="item"><b>Shadow-column A/B</b> — <code>obligation_strength_v2</code> populated from LogReg OOF predictions, swappable at query time without changing retrieval code</div>
+        <div class="item"><b>Cross-reference expansion</b> — NetworkX citation graph pulls related standards into the candidate pool</div>
       </div>
-      <p class="host-note">▸ AWS serverless throughout (Lambda, Step Functions, Aurora) — designed to run under ~$5/month</p>
+      <p class="host-note">▸ Local Postgres in Docker for reproducibility — production deployment is roadmap, not shipped</p>
     </div>
-    <p class="cs">A monthly offline indexer scrapes standards, chunks them along requirement boundaries, tags each chunk's obligation strength, embeds it, and publishes a bundle to S3. An S3 event triggers the online Step Functions pipeline, which unpacks, checksums against DynamoDB to skip unchanged revisions, and upserts chunks into Aurora with pgvector. At query time a hybrid retriever scores candidates 60% semantic + 25% keyword + 10% freshness + 5% obligation, then expands across the citation graph.</p>
-    <div class="draft">
-      <b>Editor note — delete before publishing.</b><br>
-      A single architecture diagram of the two pipelines + the DynamoDB bridge would carry this section — you already have one in the project plan; drop the image in here.
-    </div>
+    <p class="cs">Ingestion is a single Python pipeline: NERC CIP PDFs are parsed, split into requirement-aligned chunks, tagged with a regex-derived obligation label, embedded with bge-small-en-v1.5, and upserted into Postgres. At query time the retriever runs dense (pgvector HNSW) and sparse (Postgres full-text) searches independently, fuses their ranked lists using Reciprocal Rank Fusion, then applies freshness and obligation-strength priors as multiplicative post-fusion adjustments. A shadow column lets classifier-driven priors be swapped in for the regex-derived defaults without touching retrieval code — this is the substrate that made the pre-registered A/B experiment possible.</p>
   </div>
 </section>
 
@@ -217,32 +206,13 @@
   <div class="wrap">
     <span class="sec-num">03</span>
     <h2 class="cs">Key decisions &amp; tradeoffs</h2>
-    <p class="cs">The design choices that make this more than a PDF chatbot.</p>
-    <div class="decision">
-      <span class="tag">Ingestion</span>
-      <h4>Two pipelines + a DynamoDB checksum bridge</h4>
-      <p>An offline indexer and an online ingestion pipeline share a DynamoDB state table keyed by standard and version. Unchanged revisions are skipped by checksum, so the monthly run doesn't re-embed the entire corpus. The ingestion is idempotent by construction — re-running is safe.</p>
-    </div>
-    <div class="decision">
-      <span class="tag">Chunking</span>
-      <h4>Section-aware, not token-count</h4>
-      <p>NERC standards are structured as Requirements (R1, R2.3, …). The chunker respects those boundaries so a chunk never splits mid-requirement. Retrieval then returns coherent obligations instead of fragments that lose their meaning at the cut point.</p>
-    </div>
-    <div class="decision">
-      <span class="tag">Ranking</span>
-      <h4>Obligation-aware hybrid scoring</h4>
-      <p>The retrieval contribution that separates this from generic RAG: each chunk is tagged shall / should / may / informational by a fine-tuned DistilBERT, and a binding 'shall' outranks a semantically similar 'may'. Mandatory beats advisory, folded into one score alongside semantic, keyword, and freshness signals.</p>
-    </div>
-    <div class="decision">
-      <span class="tag">Retrieval</span>
-      <h4>Cross-reference graph expansion</h4>
-      <p>Standards cite each other (CIP-013 points at CIP-005). A NetworkX citation graph lets a result expand to the standards it references, so a single question surfaces both the clause asked about and the definitions it depends on.</p>
-    </div>
-    <div class="decision">
-      <span class="tag">Versioning</span>
-      <h4>Version-aware retrieval</h4>
-      <p>Each document carries its effective date and whether it's been superseded. The retriever prefers the current revision, so you don't get a confident answer drawn from a retired version of a standard.</p>
-    </div>
+    <p class="cs">Four decisions carry the retrieval-impact story. Each has a defensible alternative — the choice matters because it constrained what could be measured.</p>
+    <ul class="lessons">
+      <li><b>Reciprocal Rank Fusion over weighted linear combination</b><span>RRF fuses dense and sparse rankings by rank position, not raw score, so the two retrievers do not need calibrated score scales. A weighted linear combination (60% semantic + 25% keyword + …) is simpler on paper but requires tuning weights that drift as the corpus grows. RRF is parameter-light and empirically competitive on small corpora.</span></li>
+      <li><b>Multiplicative post-fusion priors, not additive or in-score</b><span>Freshness and obligation priors multiply the RRF score after fusion, rather than being folded into the retrieval scores themselves. This keeps priors ablatable — the retrieval evaluation can turn priors on and off without retraining or re-embedding — and it is the substrate that made the classifier-driven A/B experiment possible without changing retrieval code.</span></li>
+      <li><b>Out-of-fold predictions for the retrieval-impact experiment, full-fit for production</b><span>The retrieval A/B uses OOF predictions from 5-fold cross-validation to avoid label leakage: each chunk's predicted label was generated by a model that never saw it. This is the academically correct choice for measuring the causal effect of classifier signal on ranking. A production deployment would use a full-fit model on all 96 labels; the choice is explicitly noted in the writeup so nothing is hidden.</span></li>
+      <li><b>Binary obligation classifier, not four-way</b><span>The classifier predicts obligation vs. non-obligation, mapped back to the four-value retrieval prior via a rule-based mapping (regex modality kept where the classifier agrees; classifier-positive chunks with no regex modal default to <code>should</code> as a retrieval weight, not a semantic claim). Training a four-way classifier would require re-labelling and a much larger dataset. The binary choice is honest about what supervision the labels can support.</span></li>
+    </ul>
   </div>
 </section>
 
@@ -250,17 +220,13 @@
   <div class="wrap">
     <span class="sec-num">04</span>
     <h2 class="cs">Results</h2>
-    <p class="cs">Where the build stands (numbers are targets until measured):</p>
+    <p class="cs">Two evaluation stages, each with its own protocol and reproducibility contract.</p>
     <ul class="lessons">
-      <li><b>Two-pipeline serverless architecture</b><span>Offline indexer + event-driven online ingestion with idempotent DynamoDB bridge.</span></li>
-      <li><b>Hybrid retriever, four signals</b><span>Semantic + keyword + freshness + obligation in one score.</span></li>
-      <li><b>DistilBERT obligation classifier</b><span>Four classes — add the measured F1 once trained.</span></li>
-      <li><b>4-strategy retrieval benchmark</b><span>BM25 vs dense vs hybrid vs hybrid+cross-ref — add measured Recall@5 / MRR.</span></li>
+      <li><b>Obligation classification: LogReg F1 = 0.913</b><span>5-fold stratified out-of-fold cross-validation on 96 hand-labelled chunks (23 positives). Compared under an identical protocol against regex (F1 = 0.727), DistilBERT with default loss (F1 = 0.516, mode-collapsed on 76-example folds with 4:1 imbalance — documented as an ablation), and DistilBERT with class-weighted loss (F1 = 0.792, recovering most of the LogReg gap by changing only the loss function). LogReg wins on aggregate F1 and is used as the production obligation classifier.</span></li>
+      <li><b>Retrieval baseline: Recall@5 = 0.750, MRR = 0.545</b><span>10 questions with multi-chunk gold sets, evaluated across five retrieval strategies evaluated as progressively richer configurations (lexical, dense, RRF, RRF + priors, RRF + priors + cross-reference expansion). RRF + priors is the selected configuration for evaluation and downstream experiments. Baseline reproduces consistently across runs under fixed seeds.</span></li>
+      <li><b>Classifier-driven retrieval priors: ΔMRR = +0.038, ΔRecall@5 = 0.000</b><span>Pre-registered A/B experiment: substitute LogReg OOF predictions for the regex-derived obligation prior, run the same 10-question eval, compare to the baseline. MRR improved; recall did not. Of 33 chunks whose priors changed, only 2 were in a gold set — meaning the recall boundary was never crossed. The +0.038 MRR came primarily from an indirect effect (see section 05).</span></li>
+      <li><b>Reproducibility contracts</b><span>The LogReg OOF export script asserts F1 = 0.913 before writing predictions; if the assertion fails, no output is produced. The retrieval baseline reproduces Recall@5 = 0.750 and MRR = 0.545 consistently across runs under fixed seeds — verified after the v2 plumbing change, which was neutral for existing strategies by design.</span></li>
     </ul>
-    <div class="draft">
-      <b>Editor note — delete before publishing.</b><br>
-      This is the project's headline deliverable for a DS interview, and it's unmeasured. As you complete Week 6, fill in the real Recall@5 / MRR table and the classifier F1 — those numbers are what get the project remembered.
-    </div>
   </div>
 </section>
 
@@ -268,14 +234,25 @@
   <div class="wrap">
     <span class="sec-num">05</span>
     <h2 class="cs">What broke, and what I'd do differently</h2>
-    <p class="cs">Captured as the build progresses.</p>
+    <p class="cs">Three findings worth naming — one about the experiment mechanism, one about model choice on small data, one about the limits of representation.</p>
     <ul class="lessons">
-      <li><b>Idempotency is a design property, not an afterthought</b><span>The checksum bridge was worth building first — it makes every later re-run cheap and safe.</span></li>
+      <li><b>The pre-registered mechanism did not occur; a different one did</b><span>The hypothesis was that classifier-driven priors would rescue a known failure — a question where the correct chunks describe exemption scope in asset-class language and the retriever ranks them in the 20s. That rescue did not happen; a 1.15× multiplicative boost is not enough to move a chunk twenty positions. The measured +0.038 MRR came from a different route: two other questions gained rank because non-gold distractor chunks around them were demoted, letting gold chunks climb by default — consistent with indirect distractor demotion rather than direct target promotion. Naming this openly is what makes the +0.038 legible — small, real, and mechanistically explained rather than headlined.</span></li>
+      <li><b>DistilBERT with default cross-entropy collapsed to majority-class prediction</b><span>Two of five folds hit F1 = 0.000 on 76-example training splits with a 4:1 class imbalance. Documented as an ablation rather than discarded; the class-weighted follow-up (F1 = 0.792, only the loss changed) is the direct comparison that isolates what supervision weighting actually buys on this data scale. Lesson: this is not an apples-to-apples comparison until the loss functions are aligned.</span></li>
+      <li><b>Three model families fail on the same two chunks</b><span>bge-small in retrieval, LogReg in classification, and DistilBERT v2 in classification all misclassify or fail to rank the same two CIP-013 exemption chunks. Both express exemption scope as asset-class descriptions ("Cyber Assets associated with communication networks and data communication links") rather than as requirement language. The consistent failure suggests the fix is representational — query rewriting, embedding fine-tuning for exemption patterns, or cross-encoder reranking — not further prior tuning or classifier retraining on the same features.</span></li>
     </ul>
-    <div class="draft">
-      <b>Editor note — delete before publishing.</b><br>
-      Fill this in as you go — chunking edge cases, obligation-label noise, version-metadata gaps, and any retrieval failures you had to debug. These notes are the most interview-valuable part once the project is done.
-    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">06</span>
+    <h2 class="cs">What's next</h2>
+    <p class="cs">Three items on the roadmap, in order.</p>
+    <ul class="lessons">
+      <li><b>Expand the evaluation benchmark to 30–50 questions</b><span>Frozen corpus, retrieval configuration, and classifier — the expansion tests whether the +0.038 MRR result is robust to sampling variance, not whether a new system version performs better. The current benchmark is tagged <code>benchmark-v1</code> in the repo as the anchor for comparison.</span></li>
+      <li><b>Investigate representational fixes for the exemption-language blind spot</b><span>The cross-model failure identified in section 05 is unlikely to be fixed by further prior tuning or classifier retraining on the same features. Candidate directions: query rewriting to reference exemption scope explicitly, embedding fine-tuning on regulatory exemption patterns, or a cross-encoder reranker that attends to the full query-chunk pair.</span></li>
+      <li><b>Add an answer synthesis layer with groundedness and citation evaluation</b><span>Deferred until the retrieval story is statistically firmer. Building the LLM layer on a 10-question retrieval baseline would produce answers whose quality is bounded by uncertain retrieval quality — the wrong order of investment.</span></li>
+    </ul>
   </div>
 </section>
 

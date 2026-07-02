@@ -702,34 +702,32 @@
       <!-- GridMind -->
       <article class="card reveal">
         <div class="card-top">
-          <div class="card-title">GridMind
-            <span class="badge wip">In progress</span>
-          </div>
+          <div class="card-title">GridMind</div>
         </div>
-        <p class="card-desc">A compliance-grade retrieval system for energy reliability standards. It ingests NERC standards, FERC orders, and NREL reports through an event-driven AWS pipeline, then answers plain-English compliance questions with cited, version-aware results — each requirement tagged by how binding it is.</p>
+        <p class="card-desc">A retrieval system for NERC CIP cybersecurity compliance documents, built around a pre-registered A/B experiment: does an obligation classification signal measurably improve downstream ranking? The two-stage architecture assigns obligation labels to corpus chunks, feeds them into multiplicative priors after Reciprocal Rank Fusion, and measures the ranked output by Recall@5 and MRR.</p>
         <div class="flow" aria-label="Architecture">
-          <span class="stage">NERC / FERC docs</span><span class="arrow"></span>
-          <span class="stage">Step Functions · Lambda</span><span class="arrow"></span>
-          <span class="stage">Aurora · pgvector</span><span class="arrow"></span>
-          <span class="stage">Hybrid retrieval</span><span class="arrow"></span>
-          <span class="stage">FastAPI · Streamlit</span>
+          <span class="stage">NERC CIP PDFs</span><span class="arrow"></span>
+          <span class="stage">Regex + LogReg tag</span><span class="arrow"></span>
+          <span class="stage">bge-small embedding</span><span class="arrow"></span>
+          <span class="stage">Postgres · pgvector + FTS</span><span class="arrow"></span>
+          <span class="stage">RRF + priors</span><span class="arrow"></span>
+          <span class="stage">FastAPI</span>
         </div>
         <div class="metrics">
-          <div class="metric"><div class="m-num">4 signals</div><div class="m-lbl">Semantic + keyword + freshness + obligation</div></div>
-          <div class="metric"><div class="m-num">shall / should / may</div><div class="m-lbl">DistilBERT obligation classifier</div></div>
-          <div class="metric"><div class="m-num">Recall@5 · MRR</div><div class="m-lbl">4-strategy retrieval benchmark</div></div>
+          <div class="metric"><div class="m-num">0.913</div><div class="m-lbl">LogReg obligation F1 (5-fold OOF)</div></div>
+          <div class="metric"><div class="m-num">0.750</div><div class="m-lbl">Baseline Recall@5</div></div>
+          <div class="metric"><div class="m-num">+0.038</div><div class="m-lbl">Classifier-driven ΔMRR</div></div>
         </div>
         <div class="chips">
-          <span class="chip">AWS Lambda</span><span class="chip">Step Functions</span><span class="chip">EventBridge</span>
-          <span class="chip">Aurora · pgvector</span><span class="chip">DynamoDB</span><span class="chip">sentence-transformers</span>
-          <span class="chip">DistilBERT</span><span class="chip">NetworkX</span><span class="chip">FastAPI</span><span class="chip">Streamlit</span>
+          <span class="chip">Python</span><span class="chip">PyTorch</span><span class="chip">transformers</span>
+          <span class="chip">sentence-transformers</span><span class="chip">scikit-learn</span><span class="chip">Postgres</span>
+          <span class="chip">pgvector</span><span class="chip">FastAPI</span><span class="chip">Docker</span>
         </div>
         <div class="card-links">
           <a class="link" href="gridmind.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
-          <!-- TODO: link the GridMind repo once public -->
-          <a class="link" href="#" data-fill="repo">Code <span class="arr" aria-hidden="true">↗</span></a>
+          <a class="link" href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">Code <span class="arr" aria-hidden="true">↗</span></a>
         </div>
-        <p class="note">Active build. The retrieval-quality contribution is an obligation boost — a mandatory "shall" requirement outranks an advisory "should" even when both match the query — plus cross-reference graph expansion so a standard that cites another surfaces both. Benchmark numbers go live once measured.</p>
+        <p class="note">Two evaluation stages with reproducibility contracts: the LogReg OOF export asserts F1 = 0.913 before writing predictions, and the retrieval baseline reproduces consistently across runs under fixed seeds. The measured +0.038 MRR came from an indirect mechanism — distractor demotion, not target promotion — and is explained openly in the case study rather than headlined.</p>
       </article>
 
 
