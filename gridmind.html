@@ -98,6 +98,8 @@
   .cross .item { font-family: var(--mono); font-size: 12.5px; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); padding: 9px 12px; border-radius: 8px; }
   .cross .item b { color: var(--ink); font-weight: 600; }
   .host-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin: 14px 0 0; text-align: center; }
+  .title-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .demo-note { font-family: var(--mono); font-size: 12px; color: var(--faint); margin: 12px 0 0; }
 
   /* decision cards */
   .decision { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px 24px; margin: 0 0 14px; }
@@ -143,18 +145,23 @@
 <header class="cs">
   <div class="wrap">
     <span class="eyebrow">Case study</span>
-    <h1>GridMind</h1>
+    <div class="title-row">
+      <h1>GridMind</h1>
+      <span class="badge live"><span class="d"></span>Live</span>
+    </div>
     <p class="lede">A retrieval system for NERC CIP cybersecurity compliance documents, built around a pre-registered A/B experiment measuring whether an obligation classification signal improves downstream ranking.</p>
     <div class="meta">
       <div class="cell"><div class="k">Role</div><div class="v">Solo — design, build, evaluation</div></div>
       <div class="cell"><div class="k">Corpus</div><div class="v">96 chunks · 3 NERC CIP standards</div></div>
       <div class="cell"><div class="k">Type</div><div class="v">Personal project</div></div>
-      <div class="cell"><div class="k">Status</div><div class="v">Research prototype, eval expansion planned</div></div>
+      <div class="cell"><div class="k">Status</div><div class="v">Live — deployed on Hugging Face Spaces</div></div>
     </div>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">View code ↗</a>
+      <a class="btn primary" href="https://tejassnaikk-gridmind.hf.space" target="_blank" rel="noopener">Live demo ↗</a>
+      <a class="btn" href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">View code ↗</a>
       <a class="btn" href="index.html">← All projects</a>
     </div>
+    <p class="demo-note">Free-tier hosting — the first question after idle may take ~30 seconds.</p>
   </div>
 </header>
 
@@ -163,10 +170,10 @@
     <div class="summary">
       <p>GridMind is a retrieval system for NERC CIP cybersecurity compliance documents. Rather than stop at retrieval or LLM metrics — as most RAG portfolios do — I ran a pre-registered A/B experiment asking whether an obligation classification signal measurably improves downstream ranking. The two-stage architecture assigns obligation labels to corpus chunks, feeds them into multiplicative priors after Reciprocal Rank Fusion, and measures the ranked output by Recall@5 and MRR. The result is small, with transparent analysis of the mismatch between hypothesis and observed mechanism: a +0.038 MRR gain driven by an indirect effect the pre-registration did not predict. Full technical writeup on <a href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">GitHub</a>, including reproducibility contracts (LogReg OOF F1=0.913, baseline rrf+priors R@5=0.750 consistent across runs under fixed seeds).</p>
       <div class="kpis">
-        <div class="kpi"><div class="n">0.913</div><div class="l">LogReg obligation F1 (5-fold OOF)</div></div>
-        <div class="kpi"><div class="n">0.750</div><div class="l">Baseline Recall@5</div></div>
-        <div class="kpi"><div class="n">+0.038</div><div class="l">Classifier-driven ΔMRR</div></div>
-        <div class="kpi"><div class="n">96</div><div class="l">Hand-labelled chunks</div></div>
+        <div class="kpi"><div class="n">0.913</div><div class="l">Obligation classifier F1</div></div>
+        <div class="kpi"><div class="n">0.800 / 0.637</div><div class="l">Retrieval R@5 / MRR (embedded backend, benchmark-v2)</div></div>
+        <div class="kpi"><div class="n">96-chunk</div><div class="l">NERC CIP corpus</div></div>
+        <div class="kpi"><div class="n">$0/mo</div><div class="l">Hosting</div></div>
       </div>
     </div>
   </div>
@@ -186,19 +193,24 @@
     <h2 class="cs">Architecture</h2>
     <p class="cs">An offline indexer builds the corpus; an event-driven online pipeline ingests it idempotently; a hybrid retriever serves it. The data path below is the indexing-and-serving spine.</p>
     <div class="arch">
-      <p class="lane-label">Data path</p>
-      <div class="flow" aria-label="GridMind data path">
-        <span class="stage">NERC CIP PDFs</span><span class="arrow"></span><span class="stage">Requirement-aware chunker</span><span class="arrow"></span><span class="stage">Regex + LogReg obligation tag</span><span class="arrow"></span><span class="stage">bge-small embedding</span><span class="arrow"></span><span class="stage">Postgres · pgvector + FTS</span><span class="arrow"></span><span class="stage model">RRF + priors</span><span class="arrow"></span><span class="stage">FastAPI</span>
+      <p class="lane-label">Indexing path (development)</p>
+      <div class="flow" aria-label="GridMind indexing path">
+        <span class="stage">NERC CIP PDFs</span><span class="arrow"></span><span class="stage">Requirement-aware chunker</span><span class="arrow"></span><span class="stage">Regex + LogReg obligation tag</span><span class="arrow"></span><span class="stage">bge-small embedding</span><span class="arrow"></span><span class="stage">Postgres · pgvector + FTS</span>
+      </div>
+      <p class="lane-label" style="margin-top:20px;">Serving path (deployed)</p>
+      <div class="flow" aria-label="GridMind serving path">
+        <span class="stage">Exported embeddings + chunks</span><span class="arrow"></span><span class="stage">numpy cosine + BM25 (rank_bm25)</span><span class="arrow"></span><span class="stage model">RRF + priors</span><span class="arrow"></span><span class="stage">Gemini Flash synthesis</span><span class="arrow"></span><span class="stage">FastAPI · HF Spaces (Docker)</span>
       </div>
       <div class="cross">
         <div class="item"><b>Hybrid index</b> — pgvector HNSW for semantics, tsvector GIN for keywords, fused by Reciprocal Rank Fusion</div>
         <div class="item"><b>Obligation priors</b> — multiplicative weights (shall 1.0 → informational 0.80) applied after RRF, not baked into the score</div>
         <div class="item"><b>Shadow-column A/B</b> — <code>obligation_strength_v2</code> populated from LogReg OOF predictions, swappable at query time without changing retrieval code</div>
         <div class="item"><b>Cross-reference expansion</b> — NetworkX citation graph pulls related standards into the candidate pool</div>
+        <div class="item"><b>Answer synthesis</b> — Gemini Flash, called through an OpenAI-compatible endpoint with the provider set via env config, not hardcoded</div>
       </div>
-      <p class="host-note">▸ Local Postgres in Docker for reproducibility — production deployment is roadmap, not shipped</p>
+      <p class="host-note">▸ Postgres + pgvector + FTS is the development stack — the deployed Space runs an embedded numpy/BM25 backend (see the migration section below)</p>
     </div>
-    <p class="cs">Ingestion is a single Python pipeline: NERC CIP PDFs are parsed, split into requirement-aligned chunks, tagged with a regex-derived obligation label, embedded with bge-small-en-v1.5, and upserted into Postgres. At query time the retriever runs dense (pgvector HNSW) and sparse (Postgres full-text) searches independently, fuses their ranked lists using Reciprocal Rank Fusion, then applies freshness and obligation-strength priors as multiplicative post-fusion adjustments. A shadow column lets classifier-driven priors be swapped in for the regex-derived defaults without touching retrieval code — this is the substrate that made the pre-registered A/B experiment possible.</p>
+    <p class="cs">Ingestion is a single Python pipeline: NERC CIP PDFs are parsed, split into requirement-aligned chunks, tagged with a regex-derived obligation label, embedded with bge-small-en-v1.5, and upserted into Postgres. At query time the development retriever runs dense (pgvector HNSW) and sparse (Postgres full-text) searches independently, fuses their ranked lists using Reciprocal Rank Fusion, then applies freshness and obligation-strength priors as multiplicative post-fusion adjustments. A shadow column lets classifier-driven priors be swapped in for the regex-derived defaults without touching retrieval code — this is the substrate that made the pre-registered A/B experiment possible. The synthesis step calls Gemini Flash through an OpenAI-compatible endpoint, with the provider chosen by environment variable rather than hardcoded. The configuration above is the development setup; the deployed instance on Hugging Face Spaces replaces the Postgres-backed retriever with an embedded, in-process equivalent — see the migration writeup below.</p>
   </div>
 </section>
 
@@ -219,12 +231,24 @@
 <section class="cs">
   <div class="wrap">
     <span class="sec-num">04</span>
+    <h2 class="cs">Serving migration: Postgres → embedded</h2>
+    <p class="cs">The development stack above was built against Postgres + pgvector + FTS — HNSW for dense search, GIN/tsvector for sparse, fused by RRF. Deploying it hit a constraint the dev environment never had to face: zero-budget hosting on a single-container platform, with no managed Postgres available to it. Rather than pay for a database to serve a 96-chunk corpus, the serving path was re-architected to run in-process — numpy cosine similarity over exported embeddings in place of pgvector, and BM25 (<code>rank_bm25</code>) over the same chunks in place of Postgres full-text search. The fusion logic — Reciprocal Rank Fusion, then the same multiplicative obligation and freshness priors — was ported unchanged.</p>
+    <p class="cs">The migration was gated on the existing 10-question benchmark, re-run against the embedded backend and tagged <code>benchmark-v2</code>: Recall@5 moved 0.750 → 0.800, MRR moved 0.583 → 0.637, measured against the classifier-priors configuration (rrf+priors_v2) that was already the production baseline.</p>
+    <div class="summary">
+      <p><strong>Read this as "no regression, plausibly better," not as a proven improvement.</strong> At n=10 questions, a swing of this size is within what a single question's re-ranking can produce — it is not statistically distinguishable from noise. The result was a trade, not a clean win: q004, q006, and q009 improved, while q008 regressed, its gold chunk falling out of the top 5 under the embedded backend. The benchmark supports "the migration didn't break retrieval, and plausibly helped." It does not support "the embedded backend is better."</p>
+    </div>
+  </div>
+</section>
+
+<section class="cs">
+  <div class="wrap">
+    <span class="sec-num">05</span>
     <h2 class="cs">Results</h2>
     <p class="cs">Two evaluation stages, each with its own protocol and reproducibility contract.</p>
     <ul class="lessons">
       <li><b>Obligation classification: LogReg F1 = 0.913</b><span>5-fold stratified out-of-fold cross-validation on 96 hand-labelled chunks (23 positives). Compared under an identical protocol against regex (F1 = 0.727), DistilBERT with default loss (F1 = 0.516, mode-collapsed on 76-example folds with 4:1 imbalance — documented as an ablation), and DistilBERT with class-weighted loss (F1 = 0.792, recovering most of the LogReg gap by changing only the loss function). LogReg wins on aggregate F1 and is used as the production obligation classifier.</span></li>
       <li><b>Retrieval baseline: Recall@5 = 0.750, MRR = 0.545</b><span>10 questions with multi-chunk gold sets, evaluated across five retrieval strategies evaluated as progressively richer configurations (lexical, dense, RRF, RRF + priors, RRF + priors + cross-reference expansion). RRF + priors is the selected configuration for evaluation and downstream experiments. Baseline reproduces consistently across runs under fixed seeds.</span></li>
-      <li><b>Classifier-driven retrieval priors: ΔMRR = +0.038, ΔRecall@5 = 0.000</b><span>Pre-registered A/B experiment: substitute LogReg OOF predictions for the regex-derived obligation prior, run the same 10-question eval, compare to the baseline. MRR improved; recall did not. Of 33 chunks whose priors changed, only 2 were in a gold set — meaning the recall boundary was never crossed. The +0.038 MRR came primarily from an indirect effect (see section 05).</span></li>
+      <li><b>Classifier-driven retrieval priors: ΔMRR = +0.038, ΔRecall@5 = 0.000</b><span>Pre-registered A/B experiment: substitute LogReg OOF predictions for the regex-derived obligation prior, run the same 10-question eval, compare to the baseline. MRR improved; recall did not. Of 33 chunks whose priors changed, only 2 were in a gold set — meaning the recall boundary was never crossed. The +0.038 MRR came primarily from an indirect effect (see section 06).</span></li>
       <li><b>Reproducibility contracts</b><span>The LogReg OOF export script asserts F1 = 0.913 before writing predictions; if the assertion fails, no output is produced. The retrieval baseline reproduces Recall@5 = 0.750 and MRR = 0.545 consistently across runs under fixed seeds — verified after the v2 plumbing change, which was neutral for existing strategies by design.</span></li>
     </ul>
   </div>
@@ -232,26 +256,29 @@
 
 <section class="cs">
   <div class="wrap">
-    <span class="sec-num">05</span>
+    <span class="sec-num">06</span>
     <h2 class="cs">What broke, and what I'd do differently</h2>
-    <p class="cs">Three findings worth naming — one about the experiment mechanism, one about model choice on small data, one about the limits of representation.</p>
+    <p class="cs">Six findings worth naming: three from the original evaluation — the experiment mechanism, model choice on small data, and the limits of representation — and three surfaced by the Postgres → embedded migration.</p>
     <ul class="lessons">
       <li><b>The pre-registered mechanism did not occur; a different one did</b><span>The hypothesis was that classifier-driven priors would rescue a known failure — a question where the correct chunks describe exemption scope in asset-class language and the retriever ranks them in the 20s. That rescue did not happen; a 1.15× multiplicative boost is not enough to move a chunk twenty positions. The measured +0.038 MRR came from a different route: two other questions gained rank because non-gold distractor chunks around them were demoted, letting gold chunks climb by default — consistent with indirect distractor demotion rather than direct target promotion. Naming this openly is what makes the +0.038 legible — small, real, and mechanistically explained rather than headlined.</span></li>
       <li><b>DistilBERT with default cross-entropy collapsed to majority-class prediction</b><span>Two of five folds hit F1 = 0.000 on 76-example training splits with a 4:1 class imbalance. Documented as an ablation rather than discarded; the class-weighted follow-up (F1 = 0.792, only the loss changed) is the direct comparison that isolates what supervision weighting actually buys on this data scale. Lesson: this is not an apples-to-apples comparison until the loss functions are aligned.</span></li>
       <li><b>Three model families fail on the same two chunks</b><span>bge-small in retrieval, LogReg in classification, and DistilBERT v2 in classification all misclassify or fail to rank the same two CIP-013 exemption chunks. Both express exemption scope as asset-class descriptions ("Cyber Assets associated with communication networks and data communication links") rather than as requirement language. The consistent failure suggests the fix is representational — query rewriting, embedding fine-tuning for exemption patterns, or cross-encoder reranking — not further prior tuning or classifier retraining on the same features.</span></li>
+      <li><b>The exemption blind spot is representation-specific, not corpus-wide</b><span>The same CIP-013 exemption chunks that bge, LogReg, and DistilBERT all fail on partially surfaced once BM25 entered the fusion mix in the embedded backend — question q007's MRR moved 0.0 → 0.125. BM25 doesn't share the failure mode of the learned representations, which is evidence the blind spot lives in embedding/classifier feature space specifically, not in the text itself.</span></li>
+      <li><b>Citation faithfulness tracks retrieval depth, not just retrieval quality</b><span>At k=3 the LLM produced an answer with no citation at all — the chunk it needed had ranked just outside the context window. At k=5, the same question returned the citation correctly. Retrieval itself didn't change; only the serving parameter did. This is what motivates a citation-precision eval on the roadmap, rather than treating groundedness as solved once retrieval numbers look good.</span></li>
+      <li><b>The relevance gate needed recalibrating after the migration</b><span>Embedded-backend RRF scores run on a different scale than the Postgres-era scores the gate was originally tuned against, so the real-vs-garbage-query threshold moved from 0.015 to 0.021. Recalibration was done on 8 real/garbage query pairs with only a 0.002 separation gap between them — a narrow margin, noted here rather than presented as settled.</span></li>
     </ul>
   </div>
 </section>
 
 <section class="cs">
   <div class="wrap">
-    <span class="sec-num">06</span>
+    <span class="sec-num">07</span>
     <h2 class="cs">What's next</h2>
     <p class="cs">Three items on the roadmap, in order.</p>
     <ul class="lessons">
-      <li><b>Expand the evaluation benchmark to 30–50 questions</b><span>Frozen corpus, retrieval configuration, and classifier — the expansion tests whether the +0.038 MRR result is robust to sampling variance, not whether a new system version performs better. The current benchmark is tagged <code>benchmark-v1</code> in the repo as the anchor for comparison.</span></li>
-      <li><b>Investigate representational fixes for the exemption-language blind spot</b><span>The cross-model failure identified in section 05 is unlikely to be fixed by further prior tuning or classifier retraining on the same features. Candidate directions: query rewriting to reference exemption scope explicitly, embedding fine-tuning on regulatory exemption patterns, or a cross-encoder reranker that attends to the full query-chunk pair.</span></li>
-      <li><b>Add an answer synthesis layer with groundedness and citation evaluation</b><span>Deferred until the retrieval story is statistically firmer. Building the LLM layer on a 10-question retrieval baseline would produce answers whose quality is bounded by uncertain retrieval quality — the wrong order of investment.</span></li>
+      <li><b>Expand the evaluation benchmark to 30–50 questions</b><span>Frozen corpus, retrieval configuration, and classifier — the expansion tests whether the ranking results are robust to sampling variance, not whether a new system version performs better. The 10-question benchmark is tagged <code>benchmark-v1</code> (Postgres era) and <code>benchmark-v2</code> (same 10 questions, re-run to gate the embedded-backend migration); expansion adds new questions on top of both rather than replacing them.</span></li>
+      <li><b>Investigate representational fixes for the exemption-language blind spot</b><span>The cross-model failure identified above is unlikely to be fixed by further prior tuning or classifier retraining on the same features — and BM25's partial recovery on q007 (section 06) narrows the direction further, toward query rewriting or reranking rather than the embedding/classifier features themselves. Candidate directions: query rewriting to reference exemption scope explicitly, embedding fine-tuning on regulatory exemption patterns, or a cross-encoder reranker that attends to the full query-chunk pair.</span></li>
+      <li><b>Add a citation-precision eval, not just retrieval Recall/MRR</b><span>The answer-synthesis layer (Gemini Flash, live in the deployed demo) already produces cited answers, but section 06 showed citation faithfulness can fail even when retrieval numbers look fine — the same question came back uncited at k=3 and cited at k=5. The next eval axis is whether cited chunks actually support the claim being made, not just whether they were retrieved.</span></li>
     </ul>
   </div>
 </section>

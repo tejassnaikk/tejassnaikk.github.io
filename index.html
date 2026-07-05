@@ -704,7 +704,7 @@
         <div class="card-top">
           <div class="card-title">GridMind</div>
         </div>
-        <p class="card-desc">A retrieval system for NERC CIP cybersecurity compliance documents, built around a pre-registered A/B experiment: does an obligation classification signal measurably improve downstream ranking? The two-stage architecture assigns obligation labels to corpus chunks, feeds them into multiplicative priors after Reciprocal Rank Fusion, and measures the ranked output by Recall@5 and MRR.</p>
+        <p class="card-desc">A retrieval system for NERC CIP cybersecurity compliance documents, with a live demo that returns cited answers, not just ranked chunks. Built around a pre-registered A/B experiment: does an obligation classification signal measurably improve downstream ranking? The two-stage architecture assigns obligation labels to corpus chunks, feeds them into multiplicative priors after Reciprocal Rank Fusion, and measures the ranked output by Recall@5 and MRR.</p>
         <div class="flow" aria-label="Architecture">
           <span class="stage">NERC CIP PDFs</span><span class="arrow"></span>
           <span class="stage">Regex + LogReg tag</span><span class="arrow"></span>
@@ -715,8 +715,9 @@
         </div>
         <div class="metrics">
           <div class="metric"><div class="m-num">0.913</div><div class="m-lbl">LogReg obligation F1 (5-fold OOF)</div></div>
-          <div class="metric"><div class="m-num">0.750</div><div class="m-lbl">Baseline Recall@5</div></div>
-          <div class="metric"><div class="m-num">+0.038</div><div class="m-lbl">Classifier-driven ΔMRR</div></div>
+          <div class="metric"><div class="m-num">0.800</div><div class="m-lbl">Retrieval Recall@5 (embedded, v2)</div></div>
+          <div class="metric"><div class="m-num">0.637</div><div class="m-lbl">Retrieval MRR (embedded, v2)</div></div>
+          <div class="metric"><div class="m-num">$0/mo</div><div class="m-lbl">Hosting cost</div></div>
         </div>
         <div class="chips">
           <span class="chip">Python</span><span class="chip">PyTorch</span><span class="chip">transformers</span>
@@ -726,6 +727,7 @@
         <div class="card-links">
           <a class="link" href="gridmind.html">Case study <span class="arr" aria-hidden="true">&rarr;</span></a>
           <a class="link" href="https://github.com/tejassnaikk/gridmind" target="_blank" rel="noopener">Code <span class="arr" aria-hidden="true">↗</span></a>
+          <a class="link" href="https://tejassnaikk-gridmind.hf.space" target="_blank" rel="noopener">Live demo <span class="arr" aria-hidden="true">↗</span></a>
         </div>
         <p class="note">Two evaluation stages with reproducibility contracts: the LogReg OOF export asserts F1 = 0.913 before writing predictions, and the retrieval baseline reproduces consistently across runs under fixed seeds. The measured +0.038 MRR came from an indirect mechanism — distractor demotion, not target promotion — and is explained openly in the case study rather than headlined.</p>
       </article>
